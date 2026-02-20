@@ -1,0 +1,5 @@
+PyYAML>=6
+# Optional (OCR / STT)
+# faster-whisper>=1.2.1
+# easyocr>=1.7.2
+# ffmpeg
