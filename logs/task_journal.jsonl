@@ -1,0 +1,2 @@
+{"ts":"2026-02-21T00:00:00Z","event":"INIT","summary":"Initialize repo task journal (append-only).","status":"OK"}
+{"ts":"2026-02-21T00:00:01Z","event":"CHORE_LOGGING_INFRA","summary":"Add repo-safe logging + gates + CI (ruff/pytest) to enforce journaling discipline.","status":"OK"}
