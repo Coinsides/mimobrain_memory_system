@@ -1,0 +1,10 @@
+{
+  "task_id": "t_01HTEXAMPLE",
+  "status": "OK",
+  "outputs": [
+    {"kind": "BUNDLE", "id": "bndl_001", "uri": "vault://default/derived/bundles/bndl_001.md", "meta": null}
+  ],
+  "diagnostics": [],
+  "stats": {"elapsed_ms": 1832, "tokens_in": 0, "tokens_out": 0},
+  "provenance": {"tool": "bundle_builder", "tool_version": "0.1.0", "model": null, "prompt_version": null}
+}

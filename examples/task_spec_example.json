@@ -1,0 +1,21 @@
+{
+  "task_id": "t_01HTEXAMPLE",
+  "type": "BUILD_BUNDLE",
+  "created_at": "2026-02-21T00:00:00Z",
+  "parent_task_id": null,
+  "idempotency_key": "sha256(template+scope+granularity)",
+  "inputs": [
+    {"kind": "MU_SET", "ids": ["mu_001", "mu_002"]}
+  ],
+  "params": {
+    "template": "time_daily_v1",
+    "scope": {"time_window": ["2026-02-12", "2026-02-19"]},
+    "granularity": {
+      "detail_level": "detailed",
+      "time_resolution": "day",
+      "evidence_depth": "mu_ids"
+    }
+  },
+  "budget": {"max_tokens": 1400, "timeout_sec": 20, "max_mu": 80},
+  "constraints": {"offline_only": true}
+}
