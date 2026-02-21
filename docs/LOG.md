@@ -5,3 +5,4 @@
 
 ## 2026-02-21
 - Add logging infrastructure (repo journal + gates) and CI checks (pytest/ruff).
+- P0-C: add TaskSpec/TaskResult protocol (v0.1) JSON Schemas + validator + examples + tests.

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimobrain.local/schemas/task_result_v0_1.json",
+  "title": "TaskResult v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "status", "outputs", "diagnostics", "stats", "provenance"],
+  "properties": {
+    "task_id": {"type": "string"},
+    "status": {
+      "type": "string",
+      "enum": ["OK", "ERROR", "SKIPPED", "PARTIAL"]
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind"],
+        "properties": {
+          "kind": {"type": "string", "enum": ["MU", "VIEW", "BUNDLE", "REPORT", "FILE"]},
+          "id": {"type": ["string", "null"]},
+          "uri": {"type": ["string", "null"]},
+          "meta": {"type": ["object", "null"], "additionalProperties": true}
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["elapsed_ms", "tokens_in", "tokens_out"],
+      "properties": {
+        "elapsed_ms": {"type": "integer", "minimum": 0},
+        "tokens_in": {"type": "integer", "minimum": 0},
+        "tokens_out": {"type": "integer", "minimum": 0}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "tool_version"],
+      "properties": {
+        "tool": {"type": "string"},
+        "tool_version": {"type": "string"},
+        "model": {"type": ["string", "null"]},
+        "prompt_version": {"type": ["string", "null"]}
+      }
+    }
+  }
+}
