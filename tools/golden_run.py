@@ -49,7 +49,20 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
     days = int(days) if isinstance(days, int) else 7
 
     template = setup.get("template_hint")
-    template = str(template) if isinstance(template, str) and template else "time_overview_v1"
+    template = str(template) if isinstance(template, str) and template else None
+
+    # Choose a deterministic template when not specified.
+    if not template:
+        tags = q.get("tags") if isinstance(q.get("tags"), list) else []
+        tags = [str(t) for t in tags]
+        if "privacy" in tags:
+            template = "privacy_policy_v1"
+        elif "engineering" in tags or "audit" in tags:
+            template = "engineering_audit_v1"
+        elif "time" in tags and "tasks" in tags:
+            template = "time_daily_v1"
+        else:
+            template = "time_overview_v1"
 
     expect = q.get("expect") if isinstance(q.get("expect"), dict) else {}
     must_include = expect.get("must_include") if isinstance(expect.get("must_include"), list) else []
@@ -72,14 +85,28 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
         elif len(raw_query) > 24:
             search_query = str(must_include[0])
 
+    # Compile template defaults + question overrides into a deterministic spec.
+    from tools.granularity import downgrade_for_budget, merge_spec
+    from tools.templates import load_and_validate_template
+
+    tmpl = load_and_validate_template(template)
+    compiled = merge_spec(
+        template_name=template,
+        template_defaults=tmpl.get("defaults") if isinstance(tmpl.get("defaults"), dict) else {},
+        question_setup=setup,
+        question_expect=expect,
+        question_budget=q.get("budget") if isinstance(q.get("budget"), dict) else None,
+    )
+    compiled = downgrade_for_budget(compiled)
+
     bundle = build_bundle(
         db_path=db,
         query=search_query,
-        days=days,
-        template=template,
+        days=int(compiled.scope_days),
+        template=compiled.template,
         target_level=target_level,
-        evidence_depth=depth,
-        limit=limit,
+        evidence_depth=str(compiled.granularity.get("evidence_depth") or depth),
+        limit=int(compiled.budget.get("max_mu") or limit),
     )
 
     mu_ids = bundle.get("source_mu_ids") or []

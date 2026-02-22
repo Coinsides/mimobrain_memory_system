@@ -1,0 +1,12 @@
+name: engineering_audit_v1
+version: "1.0"
+description: "Engineering audit: changes + evidence (PR/commit)."
+defaults:
+  scope_days: 14
+  granularity:
+    detail_level: detailed
+    time_resolution: session
+    evidence_depth: mu_snippets
+  budget:
+    max_mu: 120
+    max_tokens: 1200
