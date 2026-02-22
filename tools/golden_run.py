@@ -110,7 +110,7 @@ def render_markdown(report: dict) -> str:
     failed = report["summary"]["failed"]
     skipped = report["summary"]["skipped"]
 
-    lines = []
+    lines: list[str] = []
     lines.append(f"# Golden Report ({report['run_id']})")
     lines.append("")
     lines.append(f"- created_at: {report['created_at']}")
@@ -123,13 +123,38 @@ def render_markdown(report: dict) -> str:
     for r in report["results"]:
         lines.append(f"## {r['id']}: {r['status']}")
         lines.append(f"query: {r['query']}")
-        inv = r.get("invariants")
-        if inv and not inv.get("pass"):
-            lines.append(f"- missing: {inv.get('missing')}")
-            lines.append(f"- forbidden_present: {inv.get('forbidden_present')}")
+
+        checks = r.get("checks") if isinstance(r.get("checks"), dict) else None
+        if checks:
+            mi = checks.get("must_include") if isinstance(checks.get("must_include"), dict) else {}
+            mn = checks.get("must_not") if isinstance(checks.get("must_not"), dict) else {}
+            hf = checks.get("hard_fail") if isinstance(checks.get("hard_fail"), dict) else {}
+
+            if not (mi.get("pass") and mn.get("pass") and hf.get("pass")):
+                if mi.get("missing"):
+                    lines.append(f"- missing: {mi.get('missing')}")
+                if mn.get("present"):
+                    lines.append(f"- forbidden_present: {mn.get('present')}")
+                if hf.get("triggers"):
+                    lines.append(f"- hard_fail: {hf.get('triggers')}")
+
         lines.append("")
 
     return "\n".join(lines) + "\n"
+
+
+def validate_report(report: dict, schema_path: Path) -> list[str]:
+    """Validate the report against a JSON Schema.
+
+    Returns a list of human-friendly error strings.
+    """
+
+    from jsonschema import Draft202012Validator
+
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    v = Draft202012Validator(schema)
+    errors = sorted(v.iter_errors(report), key=lambda e: (list(e.path), e.message))
+    return [f"{list(e.path)}: {e.message}" for e in errors]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -141,6 +166,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--db", default=None, help="Optional meta.sqlite path; enables bundle-based answering")
     p.add_argument("--target-level", default="private", choices=["private", "org", "public"])
     p.add_argument("--limit", type=int, default=50)
+    p.add_argument(
+        "--report-schema",
+        default=str(Path("docs") / "contracts" / "golden_report_v0_1.schema.json"),
+        help="JSON Schema for validating report.json",
+    )
     ns = p.parse_args(argv)
 
     questions = load_questions(Path(ns.questions))
@@ -212,10 +242,18 @@ def main(argv: list[str] | None = None) -> int:
         "results": results,
     }
 
+    schema_path = Path(ns.report_schema)
+    errs = validate_report(report, schema_path)
+    if errs:
+        # Put schema errors next to the report for debugging in CI.
+        (out_dir / "report.schema_errors.txt").write_text("\n".join(errs) + "\n", encoding="utf-8")
+
     (out_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (out_dir / "report.md").write_text(render_markdown(report), encoding="utf-8")
 
-    # exit non-zero on failures (hard fail or normal fail)
+    # exit non-zero on failures (hard fail or normal fail). Schema errors are also failures.
+    if errs:
+        return 4
     return 0 if summary["failed"] == 0 else 3
 
 
