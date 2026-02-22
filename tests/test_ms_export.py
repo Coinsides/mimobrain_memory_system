@@ -18,8 +18,29 @@ def test_ms_export_mu(tmp_path: Path):
 
     from tools.ms_export import main
 
-    assert main(["--in", str(d), "--out", str(out), "--target-level", "public"]) == 0
+    journal = tmp_path / "j.sqlite"
+
+    assert (
+        main(
+            [
+                "--in",
+                str(d),
+                "--out",
+                str(out),
+                "--target-level",
+                "public",
+                "--journal-db",
+                str(journal),
+            ]
+        )
+        == 0
+    )
     assert out.exists()
+
+    from tools.task_journal import query_tasks
+
+    rows = query_tasks(journal, type="MS_EXPORT")
+    assert rows
 
 
 def test_ms_export_bundle(tmp_path: Path):
