@@ -15,3 +15,4 @@
 - P0-F / P0-7C: route patch plans into run_dir/patch_plans (avoid writing next to base manifest).
 - P0-G / P0-8: add MU export tool (redaction + share_policy enforcement) + tests.
 - P0-G / P0-8: centralize privacy defaults/share policy (tools/privacy_policy.py) + tests.
+- P0-G / P0-8: add bundle export redaction (tools/export_bundle.py) + tests.
