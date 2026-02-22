@@ -33,3 +33,6 @@
 - P1-E: add minimal bundle builder (build_bundle) aligned with bundle_v0_1.
 - P1-E: add evidence_depth=mu_snippets option (bundle evidence includes snippet) + bundle contract update.
 - P1: connect build_bundle into golden_run (optional --db) to exercise evidence plumbing.
+
+## 2026-02-22
+- Incident: PR branches blocked by merge conflicts (docs/LOG.md, plus reported build_bundle-related files). Resolved by merging latest main into feature branches locally, removing conflict markers in docs/LOG.md, committing the merge, and pushing updated branches so GitHub could complete the merge.
