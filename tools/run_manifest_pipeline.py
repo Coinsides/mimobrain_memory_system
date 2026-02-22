@@ -128,7 +128,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Task journal (append-only)
     journal_db = run_dir / "task_journal.sqlite"
-    journal_ctx = {"vault_roots": vault_roots}
+    journal_ctx = {
+        "vault_roots": vault_roots,
+        "run_id": run_id,
+        "run_dir": str(run_dir),
+    }
     try:
         from tools.task_journal import append_task
     except Exception:
@@ -150,6 +154,19 @@ def main(argv: list[str] | None = None) -> int:
     results_sha = write_jsonl(results_path, results)
 
     # 4) run manifest
+    # best-effort git head
+    git_head = None
+    try:
+        import subprocess
+
+        git_head = (
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(Path(__file__).resolve().parents[1]))
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        git_head = None
+
     run_manifest = {
         "run_id": run_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -157,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
         "kind": ns.kind,
         "tooling": {
             "repo": "mimobrain_memory_system",
-            "git_head": None,
+            "git_head": git_head,
         },
         "inputs": {
             "base_path": ns.base,
