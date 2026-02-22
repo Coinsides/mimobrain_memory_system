@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimobrain.local/schemas/mu_manifest_line_v0_1.json",
+  "title": "mu_manifest line v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mu_id", "schema_version", "uri", "mu_key", "content_hash", "created_at"],
+  "properties": {
+    "mu_id": {"type": "string"},
+    "schema_version": {"type": "string"},
+    "uri": {"type": "string"},
+    "source_raw_ids": {"type": "array", "items": {"type": "string"}, "default": []},
+    "mu_key": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "created_at": {"type": "string"}
+  }
+}

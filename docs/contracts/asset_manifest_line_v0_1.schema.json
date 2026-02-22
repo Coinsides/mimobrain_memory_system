@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimobrain.local/schemas/asset_manifest_line_v0_1.json",
+  "title": "asset_manifest line v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["asset_id", "uri", "sha256", "size_bytes", "mime", "created_at"],
+  "properties": {
+    "asset_id": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "uri": {"type": "string"},
+    "sha256": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "mime": {"type": "string"},
+    "created_at": {"type": "string"}
+  }
+}
