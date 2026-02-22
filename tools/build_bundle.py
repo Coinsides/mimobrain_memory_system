@@ -42,9 +42,12 @@ def build_bundle(
     days: int = 7,
     template: str = "time_overview_v1",
     target_level: str = "private",
+    evidence_depth: str = "mu_ids",  # mu_ids|mu_snippets
     limit: int = 50,
 ) -> dict:
     since = iso_days_ago(days)
+
+    include_snippet = evidence_depth == "mu_snippets"
 
     results = search_mu(
         db_path,
@@ -54,7 +57,7 @@ def build_bundle(
         tag=None,
         privacy=None,
         target_level=target_level,
-        include_snippet=False,
+        include_snippet=include_snippet,
         limit=limit,
     )
 
@@ -70,7 +73,10 @@ def build_bundle(
         "always_on": None,
         "session_on": None,
         "query_on": {"query": query},
-        "evidence": [{"mu_id": mid} for mid in mu_ids],
+        "evidence": [
+            ({"mu_id": r.mu_id, "snippet": (r.summary if include_snippet else None)} if include_snippet else {"mu_id": r.mu_id})
+            for r in results
+        ],
     }
 
     # best-effort validate
@@ -96,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--days", type=int, default=7)
     p.add_argument("--template", default="time_overview_v1")
     p.add_argument("--target-level", default="private", choices=["private", "org", "public"])
+    p.add_argument("--evidence-depth", default="mu_ids", choices=["mu_ids", "mu_snippets"], help="Evidence detail level")
     p.add_argument("--limit", type=int, default=50)
     p.add_argument("--out", required=True)
     ns = p.parse_args(argv)
@@ -106,6 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         days=int(ns.days),
         template=ns.template,
         target_level=ns.target_level,
+        evidence_depth=ns.evidence_depth,
         limit=int(ns.limit),
     )
 
