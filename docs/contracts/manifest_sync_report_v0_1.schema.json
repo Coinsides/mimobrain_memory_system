@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimobrain.local/schemas/manifest_sync_report_v0_1.json",
+  "title": "manifest sync report v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["report_version", "created_at", "kind", "base", "incoming", "stats", "conflicts"],
+  "properties": {
+    "report_version": {"type": "string", "const": "0.1"},
+    "created_at": {"type": "string"},
+    "kind": {"type": "string", "enum": ["raw", "mu", "asset"]},
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string"},
+        "line_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "incoming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string"},
+        "line_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_unique", "incoming_unique", "exact_dupes", "new_records"],
+      "properties": {
+        "base_unique": {"type": "integer", "minimum": 0},
+        "incoming_unique": {"type": "integer", "minimum": 0},
+        "exact_dupes": {"type": "integer", "minimum": 0},
+        "new_records": {"type": "integer", "minimum": 0}
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "severity", "key", "message", "base_records", "incoming_records"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "SCHEMA_ERROR",
+              "ID_COLLISION_DIFFERENT_SHA",
+              "SHA_COLLISION_DIFFERENT_URI",
+              "URI_COLLISION_DIFFERENT_SHA"
+            ]
+          },
+          "severity": {"type": "string", "enum": ["INFO", "WARN", "ERROR"]},
+          "key": {"type": "string"},
+          "message": {"type": "string"},
+          "base_records": {"type": "array", "items": {"type": "object"}},
+          "incoming_records": {"type": "array", "items": {"type": "object"}}
+        }
+      }
+    }
+  }
+}
