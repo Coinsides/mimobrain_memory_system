@@ -125,10 +125,25 @@ def main(argv: list[str] | None = None) -> int:
     # 3) execute
     ctx = ExecContext(vault_roots=vault_roots)
     results: list[dict] = []
+
+    # Task journal (append-only)
+    journal_db = run_dir / "task_journal.sqlite"
+    try:
+        from tools.task_journal import append_task
+    except Exception:
+        append_task = None  # type: ignore
+
     for t in tasks:
         if not isinstance(t, dict):
             continue
-        results.append(exec_task(t, ctx))
+        r = exec_task(t, ctx)
+        results.append(r)
+        if append_task is not None:
+            try:
+                append_task(journal_db, t, r)
+            except Exception:
+                # journal failure should not break execution
+                pass
 
     results_path = run_dir / f"task_results.{ns.kind}.jsonl"
     results_sha = write_jsonl(results_path, results)
