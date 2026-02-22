@@ -85,28 +85,16 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
         elif len(raw_query) > 24:
             search_query = str(must_include[0])
 
-    # Compile template defaults + question overrides into a deterministic spec.
-    from tools.granularity import downgrade_for_budget, merge_spec
-    from tools.templates import load_and_validate_template
-
-    tmpl = load_and_validate_template(template)
-    compiled = merge_spec(
-        template_name=template,
-        template_defaults=tmpl.get("defaults") if isinstance(tmpl.get("defaults"), dict) else {},
-        question_setup=setup,
-        question_expect=expect,
-        question_budget=q.get("budget") if isinstance(q.get("budget"), dict) else None,
-    )
-    compiled = downgrade_for_budget(compiled)
-
+    # P1-C: compiled spec is owned by build_bundle so all callers share one path.
     bundle = build_bundle(
         db_path=db,
         query=search_query,
-        days=int(compiled.scope_days),
-        template=compiled.template,
         target_level=target_level,
-        evidence_depth=str(compiled.granularity.get("evidence_depth") or depth),
-        limit=int(compiled.budget.get("max_mu") or limit),
+        template_name=template,
+        question_setup=setup,
+        question_expect=expect,
+        question_budget=q.get("budget") if isinstance(q.get("budget"), dict) else None,
+        include_diagnostics=True,
     )
 
     mu_ids = bundle.get("source_mu_ids") or []

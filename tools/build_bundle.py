@@ -44,8 +44,53 @@ def build_bundle(
     target_level: str = "private",
     evidence_depth: str = "mu_ids",  # mu_ids|mu_snippets
     limit: int = 50,
+    # P1-C: optional template/spec inputs (preferred)
+    template_name: str | None = None,
+    question_setup: dict | None = None,
+    question_expect: dict | None = None,
+    question_budget: dict | None = None,
+    include_diagnostics: bool = True,
 ) -> dict:
-    since = iso_days_ago(days)
+    diagnostics: dict | None = None
+
+    # If template_name provided, compile spec here (so Golden and future callers share one path).
+    if template_name:
+        from tools.granularity import merge_spec, plan_downgrades
+        from tools.templates import load_and_validate_template
+
+        tmpl = load_and_validate_template(str(template_name))
+        compiled = merge_spec(
+            template_name=str(template_name),
+            template_defaults=tmpl.get("defaults") if isinstance(tmpl.get("defaults"), dict) else {},
+            question_setup=question_setup,
+            question_expect=question_expect,
+            question_budget=question_budget,
+        )
+        final_spec, plan = plan_downgrades(compiled, mode="bundle")
+
+        template = final_spec.template
+        days = int(final_spec.scope_days)
+        evidence_depth = str(final_spec.granularity.get("evidence_depth") or evidence_depth)
+        limit = int(final_spec.budget.get("max_mu") or limit)
+
+        if include_diagnostics:
+            diagnostics = {
+                "compiled_spec": {
+                    "template": compiled.template,
+                    "scope_days": compiled.scope_days,
+                    "granularity": compiled.granularity,
+                    "budget": compiled.budget,
+                },
+                "final_spec": {
+                    "template": final_spec.template,
+                    "scope_days": final_spec.scope_days,
+                    "granularity": final_spec.granularity,
+                    "budget": final_spec.budget,
+                },
+                "downgrade_plan": plan,
+            }
+
+    since = iso_days_ago(int(days))
 
     include_snippet = evidence_depth == "mu_snippets"
 
@@ -58,7 +103,7 @@ def build_bundle(
         privacy=None,
         target_level=target_level,
         include_snippet=include_snippet,
-        limit=limit,
+        limit=int(limit),
     )
 
     mu_ids = [r.mu_id for r in results]
@@ -66,7 +111,7 @@ def build_bundle(
     bundle = {
         "bundle_id": default_bundle_id(),
         "template": template,
-        "scope": {"time_window_days": days, "since": since},
+        "scope": {"time_window_days": int(days), "since": since},
         "source_mu_ids": mu_ids,
         "created_at": utc_now(),
         "expires_at": None,
@@ -78,6 +123,9 @@ def build_bundle(
             for r in results
         ],
     }
+
+    if diagnostics:
+        bundle["diagnostics"] = diagnostics
 
     # best-effort validate
     try:
