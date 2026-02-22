@@ -80,6 +80,141 @@ def merge_spec(*, template_name: str, template_defaults: dict, question_setup: d
     return CompiledSpec(template=template_name, scope_days=scope_days, granularity=gran, budget=budget)
 
 
+def estimate_tokens(spec: CompiledSpec) -> int:
+    """Cheap deterministic token estimator.
+
+    This is not meant to be accurate; it is meant to be stable so that we can
+    apply a deterministic downgrade order before a real orchestrator exists.
+    """
+
+    g = spec.granularity or {}
+    b = spec.budget or {}
+
+    detail = str(g.get("detail_level") or "normal")
+    time_res = str(g.get("time_resolution") or "day")
+    evidence = str(g.get("evidence_depth") or "mu_ids")
+
+    max_mu = b.get("max_mu")
+    max_mu = int(max_mu) if isinstance(max_mu, int) else 50
+
+    base = 220
+
+    # evidence cost dominates
+    per_mu = 18 if evidence == "mu_ids" else 55
+
+    # more detail/time means more sections/verbosity
+    detail_boost = {"overview": 0, "normal": 120, "detailed": 260, "forensic": 420}.get(detail, 120)
+    time_boost = {"week": 0, "day": 80, "session": 160, "event": 260}.get(time_res, 80)
+
+    scope_boost = int(min(600, max(0, spec.scope_days - 7) * 18))
+
+    return int(base + max_mu * per_mu + detail_boost + time_boost + scope_boost)
+
+
+def _downgrade_evidence(g: dict) -> dict:
+    cur = str(g.get("evidence_depth") or "mu_ids")
+    if cur == "mu_snippets":
+        ng = dict(g)
+        ng["evidence_depth"] = "mu_ids"
+        return ng
+    return g
+
+
+def _downgrade_detail(g: dict) -> dict:
+    cur = str(g.get("detail_level") or "normal")
+    order = DETAIL_ORDER
+    if cur in order:
+        i = order.index(cur)
+        if i + 1 < len(order):
+            ng = dict(g)
+            ng["detail_level"] = order[i + 1]
+            return ng
+    return g
+
+
+def _downgrade_time(g: dict) -> dict:
+    cur = str(g.get("time_resolution") or "day")
+    order = TIME_RES_ORDER
+    if cur in order:
+        i = order.index(cur)
+        if i + 1 < len(order):
+            ng = dict(g)
+            ng["time_resolution"] = order[i + 1]
+            return ng
+    return g
+
+
+def _shrink_scope_days(days: int) -> int:
+    # last resort (before reducing max_mu): shrink scope by half, but keep >= 1
+    return max(1, int((days + 1) // 2))
+
+
+def _shrink_max_mu(n: int) -> int:
+    # absolute last resort: reduce evidence set size.
+    return max(1, int((n + 1) // 2))
+
+
 def downgrade_for_budget(spec: CompiledSpec) -> CompiledSpec:
-    # Placeholder: nothing to do yet, but keep stable API.
-    return spec
+    """Apply deterministic downgrade policy until under max_tokens.
+
+    Order (fixed):
+      1) evidence_depth (mu_snippets -> mu_ids)
+      2) detail_level (forensic -> detailed -> normal -> overview)
+      3) time_resolution (event -> session -> day -> week)
+      4) scope_days shrink (halve until 1)
+      5) max_mu shrink (halve until 1)  # absolute last resort
+
+    This is a planner stub for P1-C; later we can replace estimate_tokens with
+    measured stats.
+    """
+
+    max_tokens = spec.budget.get("max_tokens") if isinstance(spec.budget, dict) else None
+    max_tokens = int(max_tokens) if isinstance(max_tokens, int) else None
+    if not max_tokens:
+        return spec
+
+    cur = spec
+    for _ in range(32):
+        if estimate_tokens(cur) <= max_tokens:
+            return cur
+
+        g = cur.granularity or {}
+
+        # 1) evidence
+        ng = _downgrade_evidence(g)
+        if ng is not g:
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            continue
+
+        # 2) detail
+        ng = _downgrade_detail(g)
+        if ng is not g:
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            continue
+
+        # 3) time
+        ng = _downgrade_time(g)
+        if ng is not g:
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            continue
+
+        # 4) shrink scope
+        ndays = _shrink_scope_days(int(cur.scope_days))
+        if ndays != cur.scope_days:
+            cur = CompiledSpec(template=cur.template, scope_days=ndays, granularity=cur.granularity, budget=cur.budget)
+            continue
+
+        # 5) shrink max_mu (absolute last resort)
+        b = cur.budget if isinstance(cur.budget, dict) else {}
+        cur_max_mu = b.get("max_mu")
+        cur_max_mu = int(cur_max_mu) if isinstance(cur_max_mu, int) else 50
+        nmu = _shrink_max_mu(cur_max_mu)
+        if nmu != cur_max_mu:
+            nb = dict(b)
+            nb["max_mu"] = nmu
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=cur.granularity, budget=nb)
+            continue
+
+        return cur
+
+    return cur
