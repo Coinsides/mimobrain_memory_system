@@ -18,3 +18,4 @@
 - P0-G / P0-8: add bundle export redaction (tools/export_bundle.py) + tests.
 - P0-G / P0-8: add ms_export CLI wrapper (ms export --target-level ...) + tests.
 - P0-G / P0-8: add bundle schema contract + validator (bundle_v0_1) and hook into export.
+- P0-C / P0-9: add task journal (sqlite) + pipeline integration.
