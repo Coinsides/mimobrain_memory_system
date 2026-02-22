@@ -27,6 +27,8 @@ class SearchResult:
     score: float | None
     summary: str | None
     reason: dict
+    path: str | None = None
+    privacy_level: str | None = None
 
 
 def _rank_privacy(level: str | None) -> int:
@@ -128,7 +130,7 @@ def search_mu(
         where.append("mu_tag.tag = :tag")
         params["tag"] = tag
 
-    q = f"SELECT mu.mu_id, mu.summary, mu.privacy_level, {score_expr} as score FROM mu " + " ".join(joins)
+    q = f"SELECT mu.mu_id, mu.summary, mu.privacy_level, mu.path, {score_expr} as score FROM mu " + " ".join(joins)
     if where:
         q += " WHERE " + " AND ".join(where)
 
@@ -147,7 +149,8 @@ def search_mu(
         mu_id = r[0]
         summary = r[1]
         privacy_level = r[2]
-        score = r[3]
+        path = r[3]
+        score = r[4]
 
         # Enforce target-level visibility
         if _rank_privacy(str(privacy_level) if privacy_level is not None else None) > _rank_privacy(target_level):
@@ -175,6 +178,8 @@ def search_mu(
                 score=score,
                 summary=snippet if include_snippet else summary,
                 reason=reason,
+                path=str(path) if path is not None else None,
+                privacy_level=str(privacy_level) if privacy_level is not None else None,
             )
         )
 
@@ -213,7 +218,8 @@ def main(argv: list[str] | None = None) -> int:
         "query": ns.query,
         "filters": {"since": ns.since, "until": ns.until, "tag": ns.tag, "privacy": ns.privacy},
         "results": [
-            {"mu_id": r.mu_id, "score": r.score, "summary": r.summary, "reason": r.reason} for r in res
+            {"mu_id": r.mu_id, "score": r.score, "summary": r.summary, "reason": r.reason, "path": r.path, "privacy_level": r.privacy_level}
+            for r in res
         ],
     }
     print(json.dumps(obj, ensure_ascii=False, indent=2))

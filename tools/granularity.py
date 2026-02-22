@@ -17,12 +17,12 @@ def _rank_time_res(x: str) -> int:
 
 
 def _rank_evidence(x: str) -> int:
-    return {"mu_ids": 0, "mu_snippets": 1}.get(x, 0)
+    return {"mu_ids": 0, "mu_snippets": 1, "raw_quotes": 2}.get(x, 0)
 
 
 DETAIL_ORDER = ["forensic", "detailed", "normal", "overview"]
 TIME_RES_ORDER = ["event", "session", "day", "week"]
-EVIDENCE_ORDER = ["mu_snippets", "mu_ids"]
+EVIDENCE_ORDER = ["raw_quotes", "mu_snippets", "mu_ids"]
 
 
 @dataclass(frozen=True)
@@ -55,7 +55,7 @@ def merge_spec(*, template_name: str, template_defaults: dict, question_setup: d
     evidence_depth = g.get("evidence_depth") if isinstance(g.get("evidence_depth"), str) else "mu_ids"
 
     ev = expect.get("evidence") if isinstance(expect.get("evidence"), dict) else {}
-    if isinstance(ev.get("depth"), str) and ev.get("depth") in {"mu_ids", "mu_snippets"}:
+    if isinstance(ev.get("depth"), str) and ev.get("depth") in {"mu_ids", "mu_snippets", "raw_quotes"}:
         evidence_depth = ev.get("depth")
 
     # Budget: template defaults, then question budget can tighten.
@@ -113,6 +113,10 @@ def estimate_tokens(spec: CompiledSpec) -> int:
 
 def _downgrade_evidence(g: dict) -> dict:
     cur = str(g.get("evidence_depth") or "mu_ids")
+    if cur == "raw_quotes":
+        ng = dict(g)
+        ng["evidence_depth"] = "mu_snippets"
+        return ng
     if cur == "mu_snippets":
         ng = dict(g)
         ng["evidence_depth"] = "mu_ids"

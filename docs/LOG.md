@@ -36,3 +36,15 @@
 
 ## 2026-02-22
 - Incident: PR branches blocked by merge conflicts (docs/LOG.md, plus reported build_bundle-related files). Resolved by merging latest main into feature branches locally, removing conflict markers in docs/LOG.md, committing the merge, and pushing updated branches so GitHub could complete the merge.
+- P1-G / TASK-INGEST-001: add minimal vault ingest tool (`tools/vault_ingest.py`) + CLI wrapper (`tools/ms_ingest.py`) + tests.
+- P1-G / TASK-MIGRATE-001: add pointer migration tool (`tools/pointer_migrate.py`) + CLI wrapper (`tools/ms_migrate_pointers.py`) + tests (append-only via links.supersedes).
+- P1-G / TASK-RESOLVE-001: add pointer resolve tool (`tools/pointer_resolve.py`) + CLI wrapper (`tools/ms_resolve_pointer.py`) + tests (sha256 verify + line_range snippet).
+- P1-G / degraded propagation (v0.1): wire pointer resolve into build_bundle evidence_depth=raw_quotes (best-effort); record bundle.diagnostics.evidence_degraded when snapshot exists but pointer resolve fails.
+- P1-G / repair trigger (v0.1): when degraded, emit bundle.diagnostics.repair_tasks[] entries (type=REPAIR_POINTER) for follow-up orchestration.
+- P1-G / task emission (v0.1): add tool to convert bundle.diagnostics.repair_tasks -> TaskSpec files (`tools/emit_repair_tasks.py`) + wrapper (`tools/ms_emit_repair_tasks.py`) + tests.
+- P1-G / run_dir closure (v0.1): add bundle repair pipeline runner (`tools/run_bundle_repair_pipeline.py`) and repair executor (`tools/repair_executor.py`) to write authoritative run_dir artifacts (bundle/tasks/task_results/run_manifest).
+- P1-G / auto-fix (v0.1): repair_executor can optionally write superseding MU files with migrated pointer URIs into run_dir/fixed_mu (append-only via links.supersedes).
+- P1-G / ingest fixed MU (v0.1): add MU ingest tool (`tools/vault_ingest_mu.py` + `tools/ms_ingest_mu.py`) and wire run_bundle_repair_pipeline to ingest run_dir/fixed_mu into vault + append mu_manifest.
+- P1-G / index refresh (v0.1): extend run_bundle_repair_pipeline with optional --index-db to rebuild/update meta.sqlite from vault/mu after auto-fix.
+- P1 config (v0.1): add shared ms_config.json loader (`tools/ms_config.py`) + schema; wire build_bundle, run_bundle_repair_pipeline, and golden_run to accept --config.
+- P1 golden policy (v0.1): simplest gate — if bundle diagnostics indicates evidence_degraded=true, Golden marks the question FAIL; raw_quotes requires snippet presence.

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimobrain.local/schemas/ms_config_v0_1.json",
+  "title": "Memory system config v0.1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["vault_roots"],
+  "properties": {
+    "vault_roots": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "raw_manifest_path": {"type": ["string", "null"]},
+    "mu_manifest_path": {"type": ["string", "null"]},
+    "mu_root": {"type": ["string", "null"]},
+    "runs_root_repair": {"type": ["string", "null"]}
+  }
+}
