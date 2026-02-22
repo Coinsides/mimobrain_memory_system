@@ -21,6 +21,23 @@ def _journal(db: str | None, *, spec: dict, result: dict):
         from tools.task_journal import append_task
 
         append_task(Path(db), spec, result, context={"cwd": str(Path.cwd())})
+
+        # structured logs (summary-only)
+        try:
+            from tools.logger import default_log_path, log_event
+
+            log_event(
+                event=spec.get("type") or "MS_DOCTOR",
+                log_path=default_log_path("ms_doctor"),
+                task_id=spec.get("task_id"),
+                tool="ms_doctor",
+                inputs=[{"kind": "PARAMS", **(spec.get("params") or {})}],
+                outputs=result.get("outputs"),
+                diagnostics={"status": result.get("status")},
+            )
+        except Exception:
+            pass
+
     except Exception:
         return
 

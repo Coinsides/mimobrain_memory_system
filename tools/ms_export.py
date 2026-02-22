@@ -83,6 +83,22 @@ def main(argv: list[str] | None = None) -> int:
         }
         append_task(Path(ns.journal_db), spec, result, context={"cwd": str(Path.cwd())})
 
+        # structured logs (summary-only)
+        try:
+            from tools.logger import default_log_path, log_event
+
+            log_event(
+                event="MS_EXPORT",
+                log_path=default_log_path("ms_export"),
+                task_id=task_id,
+                tool="ms_export",
+                inputs=[{"kind": "PATH", "uri": str(in_path)}],
+                outputs=[{"kind": "FILE", "uri": str(ns.out)}],
+                diagnostics={"status": status, **meta},
+            )
+        except Exception:
+            pass
+
     if kind == "mu":
         from tools.export_mu import main as export_mu_main
 

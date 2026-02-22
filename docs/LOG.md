@@ -25,3 +25,5 @@
 - P0-C / P0-9: optional journaling for ms_doctor/verify/repair (single summary record).
 - P0-D / P0-10: add Golden Set (20 questions) + schema + validator + runner/report.
 - P0-D / P0-10: add report contract + SKIP mode + hard-fail path leakage gates.
+- P0-K / P0-11: add structured jsonl logger + log_event schema; integrate into pipeline + ms_export.
+- P0-K / P0-11: add structured logs integration for ms_doctor (summary-only).
