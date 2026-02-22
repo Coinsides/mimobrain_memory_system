@@ -30,7 +30,7 @@ def run_id() -> str:
     return datetime.now(timezone.utc).strftime("RUN-%Y%m%d-%H%M%S")
 
 
-def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> dict:
+def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int, config: str | None = None) -> dict:
     """Rule-based answerer using build_bundle (P1-E).
 
     This is a stopgap answerer to exercise evidence plumbing end-to-end.
@@ -70,7 +70,7 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
     evidence_expect = expect.get("evidence") if isinstance(expect.get("evidence"), dict) else {}
     depth = evidence_expect.get("depth")
     depth = str(depth) if isinstance(depth, str) and depth else "mu_ids"
-    if depth not in {"mu_ids", "mu_snippets"}:
+    if depth not in {"mu_ids", "mu_snippets", "raw_quotes"}:
         depth = "mu_ids"
 
     raw_query = q.get("query") or ""
@@ -85,28 +85,33 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
         elif len(raw_query) > 24:
             search_query = str(must_include[0])
 
-    # Compile template defaults + question overrides into a deterministic spec.
-    from tools.granularity import downgrade_for_budget, merge_spec
-    from tools.templates import load_and_validate_template
+    # P1-C: compiled spec is owned by build_bundle so all callers share one path.
+    vault_roots = None
+    raw_manifest_path = None
+    if config:
+        try:
+            from tools.ms_config import load_config
 
-    tmpl = load_and_validate_template(template)
-    compiled = merge_spec(
-        template_name=template,
-        template_defaults=tmpl.get("defaults") if isinstance(tmpl.get("defaults"), dict) else {},
-        question_setup=setup,
-        question_expect=expect,
-        question_budget=q.get("budget") if isinstance(q.get("budget"), dict) else None,
-    )
-    compiled = downgrade_for_budget(compiled)
+            cfg = load_config(config)
+            vault_roots = cfg.get("vault_roots") if isinstance(cfg.get("vault_roots"), dict) else None
+            rmp = cfg.get("raw_manifest_path")
+            raw_manifest_path = Path(rmp) if isinstance(rmp, str) and rmp else None
+        except Exception:
+            vault_roots = None
+            raw_manifest_path = None
 
     bundle = build_bundle(
         db_path=db,
         query=search_query,
-        days=int(compiled.scope_days),
-        template=compiled.template,
         target_level=target_level,
-        evidence_depth=str(compiled.granularity.get("evidence_depth") or depth),
-        limit=int(compiled.budget.get("max_mu") or limit),
+        template_name=template,
+        question_setup=setup,
+        question_expect=expect,
+        question_budget=q.get("budget") if isinstance(q.get("budget"), dict) else None,
+        include_diagnostics=True,
+        evidence_depth=depth,
+        vault_roots=vault_roots,
+        raw_manifest_path=raw_manifest_path,
     )
 
     mu_ids = bundle.get("source_mu_ids") or []
@@ -124,6 +129,7 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
         "source_mu_ids": mu_ids,
         "evidence_depth": depth,
         "evidence": evidence,
+        "bundle_diagnostics": bundle.get("diagnostics") if isinstance(bundle, dict) else None,
     }
 
 
@@ -144,7 +150,7 @@ HARD_FAIL_PATTERNS = {
 }
 
 
-def check_invariants(answer_text: str, expect: dict, *, source_mu_ids: list[str], evidence_depth: str) -> dict:
+def check_invariants(answer_text: str, expect: dict, *, source_mu_ids: list[str], evidence_depth: str, evidence: list[dict] | None = None, bundle_diagnostics: dict | None = None) -> dict:
     must_include = expect.get("must_include") or []
     must_not = expect.get("must_not") or []
 
@@ -170,6 +176,25 @@ def check_invariants(answer_text: str, expect: dict, *, source_mu_ids: list[str]
         evidence_fail_reasons.append(f"min_mu:{min_mu} got:{len(source_mu_ids)}")
     if depth_expect and evidence_depth and depth_expect != evidence_depth:
         evidence_fail_reasons.append(f"depth_expected:{depth_expect} got:{evidence_depth}")
+
+    # If we attempted raw_quotes, require snippets.
+    if depth_expect == "raw_quotes":
+        snips = 0
+        if isinstance(evidence, list):
+            for ev in evidence:
+                if isinstance(ev, dict) and isinstance(ev.get("snippet"), str) and ev.get("snippet"):
+                    snips += 1
+        # simplest rule: snippet count must meet min_mu when min_mu is specified; otherwise at least 1.
+        if min_mu is not None:
+            if snips < min_mu:
+                evidence_fail_reasons.append(f"raw_quotes_snippets_min:{min_mu} got:{snips}")
+        else:
+            if snips < 1:
+                evidence_fail_reasons.append("raw_quotes_snippets_min:1 got:0")
+
+    # Degraded evidence is a fail (simple policy).
+    if isinstance(bundle_diagnostics, dict) and bundle_diagnostics.get("evidence_degraded") is True:
+        evidence_fail_reasons.append("evidence_degraded:true")
 
     evidence_pass = not evidence_fail_reasons
 
@@ -243,6 +268,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--questions", default=str(Path("golden") / "questions.yaml"))
     p.add_argument("--out-dir", default=str(Path("runs") / "golden" / run_id()))
     p.add_argument("--db", default=None, help="Optional meta.sqlite path; enables bundle-based answering")
+    p.add_argument("--config", default=None, help="Path to ms_config.json (optional)")
     p.add_argument("--target-level", default="private", choices=["private", "org", "public"])
     p.add_argument("--limit", type=int, default=50)
     p.add_argument(
@@ -265,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if ns.db:
             try:
-                ans = answer_with_bundle(q, db=Path(ns.db), target_level=ns.target_level, limit=int(ns.limit))
+                ans = answer_with_bundle(q, db=Path(ns.db), target_level=ns.target_level, limit=int(ns.limit), config=ns.config)
             except Exception:
                 ans = placeholder_answer(q)
         else:
@@ -275,6 +301,8 @@ def main(argv: list[str] | None = None) -> int:
             expect,
             source_mu_ids=ans.get("source_mu_ids") or [],
             evidence_depth=ans.get("evidence_depth") or "mu_ids",
+            evidence=ans.get("evidence") if isinstance(ans.get("evidence"), list) else None,
+            bundle_diagnostics=ans.get("bundle_diagnostics") if isinstance(ans.get("bundle_diagnostics"), dict) else None,
         )
 
         if not ans.get("implemented", False):

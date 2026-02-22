@@ -17,12 +17,12 @@ def _rank_time_res(x: str) -> int:
 
 
 def _rank_evidence(x: str) -> int:
-    return {"mu_ids": 0, "mu_snippets": 1}.get(x, 0)
+    return {"mu_ids": 0, "mu_snippets": 1, "raw_quotes": 2}.get(x, 0)
 
 
 DETAIL_ORDER = ["forensic", "detailed", "normal", "overview"]
 TIME_RES_ORDER = ["event", "session", "day", "week"]
-EVIDENCE_ORDER = ["mu_snippets", "mu_ids"]
+EVIDENCE_ORDER = ["raw_quotes", "mu_snippets", "mu_ids"]
 
 
 @dataclass(frozen=True)
@@ -55,7 +55,7 @@ def merge_spec(*, template_name: str, template_defaults: dict, question_setup: d
     evidence_depth = g.get("evidence_depth") if isinstance(g.get("evidence_depth"), str) else "mu_ids"
 
     ev = expect.get("evidence") if isinstance(expect.get("evidence"), dict) else {}
-    if isinstance(ev.get("depth"), str) and ev.get("depth") in {"mu_ids", "mu_snippets"}:
+    if isinstance(ev.get("depth"), str) and ev.get("depth") in {"mu_ids", "mu_snippets", "raw_quotes"}:
         evidence_depth = ev.get("depth")
 
     # Budget: template defaults, then question budget can tighten.
@@ -152,6 +152,24 @@ def _shrink_scope_days(days: int) -> int:
 def _shrink_max_mu(n: int) -> int:
     # absolute last resort: reduce evidence set size.
     return max(1, int((n + 1) // 2))
+
+
+def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[CompiledSpec, list[dict]]:
+    """Return (final_spec, plan).
+
+    v0.1 notes:
+    - For bundle mode, we keep retrieval stable and do not apply token-based downgrades.
+    - For answer mode, we apply downgrade_for_budget (deterministic) but do not yet emit a detailed plan.
+    """
+
+    if mode == "bundle":
+        return spec, []
+
+    final = downgrade_for_budget(spec)
+    if final == spec:
+        return final, []
+
+    return final, [{"kind": "downgrade_for_budget", "from": spec.__dict__, "to": final.__dict__}]
 
 
 def downgrade_for_budget(spec: CompiledSpec) -> CompiledSpec:
