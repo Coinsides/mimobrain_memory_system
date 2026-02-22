@@ -1,0 +1,77 @@
+{
+  "report_version": "0.1",
+  "created_at": "2026-02-22T03:50:56.812743+00:00",
+  "kind": "raw",
+  "base": {
+    "path": "<BASE_MANIFEST>",
+    "line_count": 1
+  },
+  "incoming": {
+    "path": "<INCOMING_MANIFEST>",
+    "line_count": 2
+  },
+  "stats": {
+    "base_unique": 1,
+    "incoming_unique": 2,
+    "exact_dupes": 0,
+    "new_records": 1
+  },
+  "conflicts": [
+    {
+      "type": "SHA_COLLISION_DIFFERENT_URI",
+      "severity": "WARN",
+      "key": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "message": "same sha256 but uri differs: base=['vault://default/raw/2026/02/21/a.txt'] incoming=['vault://default/raw/2026/02/22/a.txt']",
+      "base_records": [
+        {
+          "raw_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "uri": "vault://default/raw/2026/02/21/a.txt",
+          "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 1,
+          "mtime": null,
+          "mime": "text/plain",
+          "ingested_at": "2026-02-21T00:00:00Z"
+        }
+      ],
+      "incoming_records": [
+        {
+          "raw_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "uri": "vault://default/raw/2026/02/22/a.txt",
+          "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 1,
+          "mtime": null,
+          "mime": "text/plain",
+          "ingested_at": "2026-02-22T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "type": "URI_COLLISION_DIFFERENT_SHA",
+      "severity": "ERROR",
+      "key": "vault://default/raw/2026/02/21/a.txt",
+      "message": "same uri but sha256 differs: base=['sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'] incoming=['sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb']",
+      "base_records": [
+        {
+          "raw_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "uri": "vault://default/raw/2026/02/21/a.txt",
+          "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 1,
+          "mtime": null,
+          "mime": "text/plain",
+          "ingested_at": "2026-02-21T00:00:00Z"
+        }
+      ],
+      "incoming_records": [
+        {
+          "raw_id": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "uri": "vault://default/raw/2026/02/21/a.txt",
+          "sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "size_bytes": 1,
+          "mtime": null,
+          "mime": "text/plain",
+          "ingested_at": "2026-02-22T00:00:00Z"
+        }
+      ]
+    }
+  ]
+}

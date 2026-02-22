@@ -8,3 +8,4 @@
 - P0-C: add TaskSpec/TaskResult protocol (v0.1) JSON Schemas + validator + examples + tests.
 - P0-H: add Vault URI v0.1 + manifest line schemas (raw/mu/asset) + doctor/verify/repair helpers + tests.
 - P0-F / P0-7A: add manifest sync analysis tool + machine-first sync report schema + tests.
+- P0-F / P0-7B: add report→TaskSpec generator, authoritative local run emitter, repo-safe examples + CI gate.

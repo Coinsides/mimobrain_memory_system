@@ -32,10 +32,23 @@ jobs:
         run: |
           python tools/require_journal.py --base "$BASE_SHA" --head "$HEAD_SHA"
 
+      - name: Gate: require examples update for sync changes (PR)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python tools/require_examples.py --base "$BASE_SHA" --head "$HEAD_SHA"
+
       - name: Gate: require journal update for code changes (push)
         if: github.event_name == 'push'
         run: |
           python tools/require_journal.py --base HEAD~1 --head HEAD
+
+      - name: Gate: require examples update for sync changes (push)
+        if: github.event_name == 'push'
+        run: |
+          python tools/require_examples.py --base HEAD~1 --head HEAD
 
       - name: Ruff (lint)
         run: |

@@ -22,6 +22,9 @@
         "BUILD_VIEW",
         "BUILD_BUNDLE",
         "REPAIR_POINTER",
+        "VERIFY_MANIFEST",
+        "REPAIR_MANIFEST_URI",
+        "SYNC_MANIFEST_APPLY",
         "RUN_GOLDEN"
       ]
     },
