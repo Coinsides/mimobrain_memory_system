@@ -24,3 +24,4 @@
 - P0-C / P0-9: optional journaling for ms_export (single summary record).
 - P0-C / P0-9: optional journaling for ms_doctor/verify/repair (single summary record).
 - P0-D / P0-10: add Golden Set (20 questions) + schema + validator + runner/report.
+- P0-D / P0-10: add report contract + SKIP mode + hard-fail path leakage gates.
