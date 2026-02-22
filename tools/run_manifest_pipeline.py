@@ -138,16 +138,43 @@ def main(argv: list[str] | None = None) -> int:
     except Exception:
         append_task = None  # type: ignore
 
+    # structured logs
+    try:
+        from tools.logger import default_log_path, log_event
+
+        run_log = default_log_path("pipeline")
+        log_event(event="RUN_START", log_path=run_log, run_id=run_id, run_dir=str(run_dir), tool="run_manifest_pipeline")
+    except Exception:
+        log_event = None  # type: ignore
+        run_log = None  # type: ignore
+
     for t in tasks:
         if not isinstance(t, dict):
             continue
         r = exec_task(t, ctx)
         results.append(r)
+
         if append_task is not None:
             try:
                 append_task(journal_db, t, r, context=journal_ctx)
             except Exception:
                 # journal failure should not break execution
+                pass
+
+        if log_event is not None:
+            try:
+                log_event(
+                    event="TASK_EXEC",
+                    log_path=run_log,
+                    run_id=run_id,
+                    run_dir=str(run_dir),
+                    task_id=r.get("task_id"),
+                    inputs=[{"kind": "TASK", "type": t.get("type"), "idempotency_key": t.get("idempotency_key")}],
+                    outputs=r.get("outputs"),
+                    stats={"elapsed_ms": r.get("elapsed_ms")},
+                    diagnostics={"status": r.get("status")},
+                )
+            except Exception:
                 pass
 
     results_path = run_dir / f"task_results.{ns.kind}.jsonl"
@@ -198,6 +225,20 @@ def main(argv: list[str] | None = None) -> int:
         },
     }
     write_json(run_dir / "run_manifest.json", run_manifest)
+
+    # log run end
+    if log_event is not None:
+        try:
+            log_event(
+                event="RUN_END",
+                log_path=run_log,
+                run_id=run_id,
+                run_dir=str(run_dir),
+                tool="run_manifest_pipeline",
+                stats={"tasks": len([t for t in tasks if isinstance(t, dict)])},
+            )
+        except Exception:
+            pass
 
     print(str(run_dir))
     return 0
