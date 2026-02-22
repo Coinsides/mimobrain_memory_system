@@ -128,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Task journal (append-only)
     journal_db = run_dir / "task_journal.sqlite"
+    journal_ctx = {"vault_roots": vault_roots}
     try:
         from tools.task_journal import append_task
     except Exception:
@@ -140,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         results.append(r)
         if append_task is not None:
             try:
-                append_task(journal_db, t, r)
+                append_task(journal_db, t, r, context=journal_ctx)
             except Exception:
                 # journal failure should not break execution
                 pass

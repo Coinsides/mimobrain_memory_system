@@ -41,10 +41,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_at TEXT,
   elapsed_ms INTEGER,
   spec_json TEXT NOT NULL,
-  result_json TEXT NOT NULL
+  result_json TEXT NOT NULL,
+  context_json TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_idempotency_key ON tasks(idempotency_key);
 """
 
 
@@ -64,7 +66,7 @@ def _json_dumps(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False, sort_keys=True)
 
 
-def append_task(db_path: Path, spec: dict, result: dict) -> None:
+def append_task(db_path: Path, spec: dict, result: dict, *, context: dict | None = None) -> None:
     init_db(db_path)
 
     task_id = result.get("task_id") or spec.get("task_id") or spec.get("id")
@@ -80,15 +82,16 @@ def append_task(db_path: Path, spec: dict, result: dict) -> None:
         "elapsed_ms": result.get("elapsed_ms"),
         "spec_json": _json_dumps(spec),
         "result_json": _json_dumps(result),
+        "context_json": _json_dumps(context) if context is not None else None,
     }
 
     with connect(db_path) as conn:
         conn.execute(
             """
             INSERT OR REPLACE INTO tasks
-              (task_id, idempotency_key, type, status, created_at, elapsed_ms, spec_json, result_json)
+              (task_id, idempotency_key, type, status, created_at, elapsed_ms, spec_json, result_json, context_json)
             VALUES
-              (:task_id, :idempotency_key, :type, :status, :created_at, :elapsed_ms, :spec_json, :result_json)
+              (:task_id, :idempotency_key, :type, :status, :created_at, :elapsed_ms, :spec_json, :result_json, :context_json)
             """,
             row,
         )
@@ -122,20 +125,27 @@ def query_tasks(
     return [dict(r) for r in rows]
 
 
-def load_task(db_path: Path, task_id: str) -> tuple[dict, dict]:
+def load_task(db_path: Path, task_id: str) -> tuple[dict, dict, dict | None]:
     init_db(db_path)
     with connect(db_path) as conn:
-        row = conn.execute("SELECT spec_json, result_json FROM tasks WHERE task_id=?", (task_id,)).fetchone()
+        row = conn.execute(
+            "SELECT spec_json, result_json, context_json FROM tasks WHERE task_id=?", (task_id,)
+        ).fetchone()
     if not row:
         raise KeyError(task_id)
-    return json.loads(row["spec_json"]), json.loads(row["result_json"])
+    ctx = json.loads(row["context_json"]) if row["context_json"] else None
+    return json.loads(row["spec_json"]), json.loads(row["result_json"]), ctx
 
 
 def replay_task(db_path: Path, task_id: str) -> dict:
-    spec, _ = load_task(db_path, task_id)
+    spec, _, ctx_data = load_task(db_path, task_id)
     from tools.manifest_executor import ExecContext, exec_task
 
-    ctx = ExecContext(vault_roots={})
+    vault_roots = {}
+    if isinstance(ctx_data, dict) and isinstance(ctx_data.get("vault_roots"), dict):
+        vault_roots = ctx_data.get("vault_roots")
+
+    ctx = ExecContext(vault_roots=vault_roots)
     return exec_task(spec, ctx)
 
 
