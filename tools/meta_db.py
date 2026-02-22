@@ -69,6 +69,22 @@ END;
 
 CREATE INDEX IF NOT EXISTS idx_mu_time ON mu(time);
 CREATE INDEX IF NOT EXISTS idx_mu_privacy ON mu(privacy_level);
+
+-- view cache (P1-D)
+CREATE TABLE IF NOT EXISTS view_cache (
+  view_id TEXT PRIMARY KEY,
+  template TEXT NOT NULL,
+  scope_json TEXT NOT NULL,
+  source_mu_ids_json TEXT NOT NULL,
+  source_mu_hash TEXT,
+  created_at TEXT NOT NULL,
+  expires_at TEXT,
+  stale INTEGER NOT NULL DEFAULT 0,
+  content_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_view_template ON view_cache(template);
+CREATE INDEX IF NOT EXISTS idx_view_stale ON view_cache(stale);
 """
 
 
