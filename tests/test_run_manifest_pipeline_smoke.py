@@ -70,3 +70,8 @@ def test_pipeline_smoke(tmp_path: Path):
     assert (run_dir / "sync_report.raw.json").exists()
     assert (run_dir / "tasks.raw.jsonl").exists()
     assert (run_dir / "task_results.raw.jsonl").exists()
+
+    # patch plans should be written under run_dir/patch_plans
+    patch_dir = run_dir / "patch_plans"
+    assert patch_dir.exists()
+    assert list(patch_dir.glob("*.patch_plan.json"))

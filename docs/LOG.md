@@ -12,3 +12,4 @@
 - P0-F / P0-7C: add conservative append-only apply planner (plan+optional apply) + patch plan schema + tests.
 - P0-F / P0-7C: add minimal task executor (TaskSpec→TaskResult) for verify/repair/apply (default dry-run) + tests.
 - P0-F / P0-7C: add end-to-end pipeline runner (report→tasks→execute) that writes authoritative run artifacts + tests.
+- P0-F / P0-7C: route patch plans into run_dir/patch_plans (avoid writing next to base manifest).

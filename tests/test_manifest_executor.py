@@ -64,7 +64,7 @@ def test_executor_runs_sync_manifest_apply_dry_run(tmp_path: Path):
 
     assert main(["--tasks", str(tasks), "--out", str(out)]) == 0
 
-    # Should write a patch plan file next to base
+    # Should write a patch plan file next to base by default
     plan_path = base.with_suffix(".patch_plan.json")
     assert plan_path.exists()
 
