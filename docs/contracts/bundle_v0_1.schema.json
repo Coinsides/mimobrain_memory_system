@@ -38,7 +38,8 @@
           "mu_id": { "type": "string" },
           "pointer": { "type": "array", "items": { "type": "object" }, "default": [] },
           "snapshot": { "type": ["object", "null"], "default": null },
-          "privacy": { "type": ["object", "null"], "default": null }
+          "privacy": { "type": ["object", "null"], "default": null },
+          "snippet": { "type": ["string", "null"], "default": null }
         }
       }
     },

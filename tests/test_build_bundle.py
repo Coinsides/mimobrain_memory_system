@@ -36,6 +36,10 @@ def test_build_bundle_minimal(tmp_path: Path):
     assert b["source_mu_ids"] == ["mu_a"]
     assert b["evidence"] == [{"mu_id": "mu_a"}]
 
+    b2 = build_bundle(db_path=db, query="travel", days=9999, evidence_depth="mu_snippets", limit=10)
+    assert b2["evidence"][0]["mu_id"] == "mu_a"
+    assert b2["evidence"][0].get("snippet")
+
     # should validate against bundle schema
     from tools.bundle_validate import validate_bundle
 
