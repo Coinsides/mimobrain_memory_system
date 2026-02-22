@@ -28,3 +28,4 @@
 - P0-K / P0-11: add structured jsonl logger + log_event schema; integrate into pipeline + ms_export.
 - P0-K / P0-11: add structured logs integration for ms_doctor (summary-only).
 - P1-A: add meta.sqlite schema + index_mu tool (full rebuild) + tests.
+- P1-B: add search_mu (FTS + filters + reason) + tests.
