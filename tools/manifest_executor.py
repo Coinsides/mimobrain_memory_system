@@ -147,8 +147,14 @@ def exec_sync_manifest_apply(task: dict, ctx: ExecContext) -> dict:
     if not dry_run:
         apply_plan(plan)
 
-    # Write plan next to base manifest (repo/user can relocate later)
-    out_path = Path(base_path).with_suffix(".patch_plan.json")
+    # Write plan to an explicit out_dir if provided, otherwise next to base manifest.
+    out_dir = params.get("out_dir")
+    if isinstance(out_dir, str) and out_dir.strip():
+        out_path = Path(out_dir) / (Path(base_path).name + ".patch_plan.json")
+    else:
+        out_path = Path(base_path).with_suffix(".patch_plan.json")
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     return task_result(

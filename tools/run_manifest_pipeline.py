@@ -104,12 +104,21 @@ def main(argv: list[str] | None = None) -> int:
 
     # 2) tasks (force dry-run unless --apply)
     tasks = tasks_from_report(report)
+    patch_plans_dir = run_dir / "patch_plans"
+    patch_plans_dir.mkdir(parents=True, exist_ok=True)
     if not ns.apply:
         for t in tasks:
             if isinstance(t, dict) and t.get("type") == "SYNC_MANIFEST_APPLY":
                 params = t.get("params")
                 if isinstance(params, dict):
                     params["dry_run"] = True
+                    params["out_dir"] = str(patch_plans_dir)
+    else:
+        for t in tasks:
+            if isinstance(t, dict) and t.get("type") == "SYNC_MANIFEST_APPLY":
+                params = t.get("params")
+                if isinstance(params, dict):
+                    params["out_dir"] = str(patch_plans_dir)
     tasks_path = run_dir / f"tasks.{ns.kind}.jsonl"
     tasks_sha = write_jsonl(tasks_path, tasks)
 

@@ -108,22 +108,23 @@ def tasks_from_report(report: dict) -> list[dict[str, Any]]:
         }:
             manual.append(c)
 
-    if manual:
-        tasks.append(
-            task(
-                type="SYNC_MANIFEST_APPLY",
-                idempotency_key=f"sync_apply:{kind}:{base_path}:{incoming_path}",
-                inputs=[],
-                params={
-                    "kind": kind,
-                    "base_path": base_path,
-                    "incoming_path": incoming_path,
-                    "dry_run": True,
-                    "manual_conflicts": manual,
-                    "policy": "conservative_no_overwrite",
-                },
-            )
+    # Always include a conservative apply planning task, even when there are no manual conflicts.
+    # This lets the system append brand-new ids and produce a patch plan artifact under the run_dir.
+    tasks.append(
+        task(
+            type="SYNC_MANIFEST_APPLY",
+            idempotency_key=f"sync_apply:{kind}:{base_path}:{incoming_path}",
+            inputs=[],
+            params={
+                "kind": kind,
+                "base_path": base_path,
+                "incoming_path": incoming_path,
+                "dry_run": True,
+                "manual_conflicts": manual,
+                "policy": "conservative_no_overwrite",
+            },
         )
+    )
 
     return tasks
 
