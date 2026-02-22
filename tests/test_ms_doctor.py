@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 
-def test_ms_doctor_manifest_journals(tmp_path: Path):
+def test_ms_doctor_manifest_journals(tmp_path: Path, monkeypatch):
     # minimal schema + manifest
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -17,6 +17,16 @@ def test_ms_doctor_manifest_journals(tmp_path: Path):
     manifest_p.write_text('{"x":"ok"}\n', encoding="utf-8")
 
     journal = tmp_path / "j.sqlite"
+
+    # Redirect structured logs to a tmp file (avoid writing into repo/logs)
+    from tools import logger as logger_mod
+
+    log_path = tmp_path / "ms_doctor.jsonl"
+
+    def _dlp(_name: str):
+        return log_path
+
+    monkeypatch.setattr(logger_mod, "default_log_path", _dlp)
 
     from tools.ms_doctor import main
 
@@ -39,3 +49,7 @@ def test_ms_doctor_manifest_journals(tmp_path: Path):
 
     rows = query_tasks(journal, type="MS_DOCTOR_MANIFEST")
     assert rows
+
+    # ensure a structured log line was written
+    assert log_path.exists()
+    assert log_path.read_text(encoding="utf-8").strip()
