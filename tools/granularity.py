@@ -113,6 +113,10 @@ def estimate_tokens(spec: CompiledSpec) -> int:
 
 def _downgrade_evidence(g: dict) -> dict:
     cur = str(g.get("evidence_depth") or "mu_ids")
+    if cur == "raw_quotes":
+        ng = dict(g)
+        ng["evidence_depth"] = "mu_snippets"
+        return ng
     if cur == "mu_snippets":
         ng = dict(g)
         ng["evidence_depth"] = "mu_ids"
@@ -154,22 +158,130 @@ def _shrink_max_mu(n: int) -> int:
     return max(1, int((n + 1) // 2))
 
 
-def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[CompiledSpec, list[dict]]:
-    """Return (final_spec, plan).
+def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[CompiledSpec, dict]:
+    """Plan deterministic downgrades and return (final_spec, diagnostics).
 
-    v0.1 notes:
-    - For bundle mode, we keep retrieval stable and do not apply token-based downgrades.
-    - For answer mode, we apply downgrade_for_budget (deterministic) but do not yet emit a detailed plan.
+    mode:
+      - "answer": apply full downgrade policy to respect max_tokens.
+      - "bundle": do NOT shrink scope/detail/time based on token budget (bundle building is retrieval-only);
+                 only enforce max_mu/evidence_depth expectations.
+
+    diagnostics includes:
+      - mode
+      - max_tokens
+      - estimated_tokens_before/after
+      - downgrade_steps[]
     """
 
+    max_tokens = spec.budget.get("max_tokens") if isinstance(spec.budget, dict) else None
+    max_tokens = int(max_tokens) if isinstance(max_tokens, int) else None
+
+    before = estimate_tokens(spec)
+
+    # In bundle mode we do not enforce max_tokens via scope/detail/time downgrades.
+    if mode not in {"answer", "bundle"}:
+        mode = "answer"
+
     if mode == "bundle":
-        return spec, []
+        # Keep scope/detail/time as-is; only ensure evidence_depth is supported and max_mu is sane.
+        g = spec.granularity or {}
+        b = spec.budget if isinstance(spec.budget, dict) else {}
 
-    final = downgrade_for_budget(spec)
-    if final == spec:
-        return final, []
+        steps: list[dict] = []
+        ng = _downgrade_evidence(g)
+        if ng is not g:
+            steps.append({"kind": "evidence_depth", "from": g.get("evidence_depth"), "to": ng.get("evidence_depth")})
+            spec = CompiledSpec(template=spec.template, scope_days=spec.scope_days, granularity=ng, budget=spec.budget)
 
-    return final, [{"kind": "downgrade_for_budget", "from": spec.__dict__, "to": final.__dict__}]
+        # clamp max_mu to >=1
+        cur_max_mu = b.get("max_mu")
+        cur_max_mu = int(cur_max_mu) if isinstance(cur_max_mu, int) else 50
+        if cur_max_mu < 1:
+            nb = dict(b)
+            nb["max_mu"] = 1
+            steps.append({"kind": "max_mu", "from": cur_max_mu, "to": 1})
+            spec = CompiledSpec(template=spec.template, scope_days=spec.scope_days, granularity=spec.granularity, budget=nb)
+
+        after = estimate_tokens(spec)
+        return spec, {
+            "mode": "bundle",
+            "max_tokens": max_tokens,
+            "estimated_tokens_before": before,
+            "estimated_tokens_after": after,
+            "downgrade_steps": steps,
+            "note": "bundle_mode_does_not_enforce_max_tokens",
+        }
+
+    # answer mode (full planner)
+    if not max_tokens:
+        return spec, {
+            "mode": "answer",
+            "max_tokens": max_tokens,
+            "estimated_tokens_before": before,
+            "estimated_tokens_after": before,
+            "downgrade_steps": [],
+        }
+
+    steps: list[dict] = []
+
+    cur = spec
+    for _ in range(32):
+        if estimate_tokens(cur) <= max_tokens:
+            break
+
+        g = cur.granularity or {}
+
+        # 1) evidence
+        ng = _downgrade_evidence(g)
+        if ng is not g:
+            steps.append({"kind": "evidence_depth", "from": g.get("evidence_depth"), "to": ng.get("evidence_depth")})
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            continue
+
+        # 2) detail
+        ng = _downgrade_detail(g)
+        if ng is not g:
+            steps.append({"kind": "detail_level", "from": g.get("detail_level"), "to": ng.get("detail_level")})
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            continue
+
+        # 3) time
+        ng = _downgrade_time(g)
+        if ng is not g:
+            steps.append({"kind": "time_resolution", "from": g.get("time_resolution"), "to": ng.get("time_resolution")})
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            continue
+
+        # 4) shrink scope
+        ndays = _shrink_scope_days(int(cur.scope_days))
+        if ndays != cur.scope_days:
+            steps.append({"kind": "scope_days", "from": cur.scope_days, "to": ndays})
+            cur = CompiledSpec(template=cur.template, scope_days=ndays, granularity=cur.granularity, budget=cur.budget)
+            continue
+
+        # 5) shrink max_mu (absolute last resort)
+        b = cur.budget if isinstance(cur.budget, dict) else {}
+        cur_max_mu = b.get("max_mu")
+        cur_max_mu = int(cur_max_mu) if isinstance(cur_max_mu, int) else 50
+        nmu = _shrink_max_mu(cur_max_mu)
+        if nmu != cur_max_mu:
+            steps.append({"kind": "max_mu", "from": cur_max_mu, "to": nmu})
+            nb = dict(b)
+            nb["max_mu"] = nmu
+            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=cur.granularity, budget=nb)
+            continue
+
+        break
+
+    after = estimate_tokens(cur)
+
+    return cur, {
+        "mode": "answer",
+        "max_tokens": max_tokens,
+        "estimated_tokens_before": before,
+        "estimated_tokens_after": after,
+        "downgrade_steps": steps,
+    }
 
 
 def downgrade_for_budget(spec: CompiledSpec) -> CompiledSpec:
@@ -186,53 +298,5 @@ def downgrade_for_budget(spec: CompiledSpec) -> CompiledSpec:
     measured stats.
     """
 
-    max_tokens = spec.budget.get("max_tokens") if isinstance(spec.budget, dict) else None
-    max_tokens = int(max_tokens) if isinstance(max_tokens, int) else None
-    if not max_tokens:
-        return spec
-
-    cur = spec
-    for _ in range(32):
-        if estimate_tokens(cur) <= max_tokens:
-            return cur
-
-        g = cur.granularity or {}
-
-        # 1) evidence
-        ng = _downgrade_evidence(g)
-        if ng is not g:
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
-            continue
-
-        # 2) detail
-        ng = _downgrade_detail(g)
-        if ng is not g:
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
-            continue
-
-        # 3) time
-        ng = _downgrade_time(g)
-        if ng is not g:
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
-            continue
-
-        # 4) shrink scope
-        ndays = _shrink_scope_days(int(cur.scope_days))
-        if ndays != cur.scope_days:
-            cur = CompiledSpec(template=cur.template, scope_days=ndays, granularity=cur.granularity, budget=cur.budget)
-            continue
-
-        # 5) shrink max_mu (absolute last resort)
-        b = cur.budget if isinstance(cur.budget, dict) else {}
-        cur_max_mu = b.get("max_mu")
-        cur_max_mu = int(cur_max_mu) if isinstance(cur_max_mu, int) else 50
-        nmu = _shrink_max_mu(cur_max_mu)
-        if nmu != cur_max_mu:
-            nb = dict(b)
-            nb["max_mu"] = nmu
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=cur.granularity, budget=nb)
-            continue
-
-        return cur
-
-    return cur
+    out, _diag = plan_downgrades(spec)
+    return out

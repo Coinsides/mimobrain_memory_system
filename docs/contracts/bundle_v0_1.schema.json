@@ -43,6 +43,7 @@
         }
       }
     },
+    "diagnostics": { "type": "object", "additionalProperties": true },
     "export": { "type": "object" }
   }
 }
