@@ -29,3 +29,4 @@
 - P0-K / P0-11: add structured logs integration for ms_doctor (summary-only).
 - P1-A: add meta.sqlite schema + index_mu tool (full rebuild) + tests.
 - P1-B: add search_mu (FTS + filters + reason) + tests.
+- P1-E: add minimal bundle builder (build_bundle) aligned with bundle_v0_1.
