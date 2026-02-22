@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimo.local/contracts/golden_report_v0_1.schema.json",
+  "title": "Golden Report v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "created_at", "runner", "summary", "results"],
+  "properties": {
+    "run_id": {"type": "string"},
+    "created_at": {"type": "string"},
+    "runner": {"type": "string"},
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "passed", "failed", "skipped", "hard_failed"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0},
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0},
+        "hard_failed": {"type": "integer", "minimum": 0}
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "query", "status", "answer", "checks"],
+        "properties": {
+          "id": {"type": "string"},
+          "query": {"type": "string"},
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "SKIP"]},
+          "skip_reason": {"type": ["string", "null"]},
+          "answer": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text", "source_mu_ids", "evidence_depth", "evidence"],
+            "properties": {
+              "text": {"type": "string"},
+              "source_mu_ids": {"type": "array", "items": {"type": "string"}},
+              "evidence_depth": {"type": "string", "enum": ["mu_ids", "mu_snippets", "raw_quotes"]},
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "required": ["mu_id"],
+                  "properties": {"mu_id": {"type": "string"}}
+                }
+              }
+            }
+          },
+          "checks": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["must_include", "must_not", "hard_fail"],
+            "properties": {
+              "must_include": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["missing", "pass"],
+                "properties": {
+                  "missing": {"type": "array", "items": {"type": "string"}},
+                  "pass": {"type": "boolean"}
+                }
+              },
+              "must_not": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["present", "pass"],
+                "properties": {
+                  "present": {"type": "array", "items": {"type": "string"}},
+                  "pass": {"type": "boolean"}
+                }
+              },
+              "hard_fail": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["triggers", "pass"],
+                "properties": {
+                  "triggers": {"type": "array", "items": {"type": "string"}},
+                  "pass": {"type": "boolean"}
+                }
+              }
+            }
+          },
+          "tags": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}
