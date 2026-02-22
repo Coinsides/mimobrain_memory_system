@@ -20,3 +20,4 @@
 - P0-G / P0-8: add bundle schema contract + validator (bundle_v0_1) and hook into export.
 - P0-C / P0-9: add task journal (sqlite) + pipeline integration.
 - P0-C / P0-9: persist ExecContext (vault_roots) into task journal for replay.
+- P0-C / P0-9: extend journal context (run_id/run_dir) and annotate replay provenance.

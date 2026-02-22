@@ -23,8 +23,8 @@ def test_task_journal_load_and_replay_smoke(tmp_path: Path):
     spec = {"task_id": "t1", "type": "VERIFY_MANIFEST", "idempotency_key": "k", "params": {"kind": "raw", "manifest_path": "x"}}
     res = {"task_id": "t1", "status": "OK", "elapsed_ms": 1}
 
-    append_task(db, spec, res, context={"vault_roots": {"default": "X"}})
+    append_task(db, spec, res, context={"vault_roots": {"default": "X"}, "run_id": "RUN-1", "run_dir": "D"})
     s2, r2, ctx = load_task(db, "t1")
     assert s2["type"] == "VERIFY_MANIFEST"
     assert r2["status"] == "OK"
-    assert ctx == {"vault_roots": {"default": "X"}}
+    assert ctx == {"vault_roots": {"default": "X"}, "run_id": "RUN-1", "run_dir": "D"}

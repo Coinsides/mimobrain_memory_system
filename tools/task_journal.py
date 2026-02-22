@@ -146,7 +146,16 @@ def replay_task(db_path: Path, task_id: str) -> dict:
         vault_roots = ctx_data.get("vault_roots")
 
     ctx = ExecContext(vault_roots=vault_roots)
-    return exec_task(spec, ctx)
+    out = exec_task(spec, ctx)
+    # annotate replay provenance
+    if isinstance(ctx_data, dict):
+        out.setdefault("meta", {})
+        out["meta"]["replayed_from"] = {
+            "task_id": task_id,
+            "run_id": ctx_data.get("run_id"),
+            "run_dir": ctx_data.get("run_dir"),
+        }
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
