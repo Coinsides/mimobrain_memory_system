@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimo.local/contracts/golden_questions_v0_1.schema.json",
+  "title": "Golden Questions v0.1",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "query", "expect"],
+    "properties": {
+      "id": {"type": "string", "minLength": 1},
+      "query": {"type": "string", "minLength": 1},
+      "setup": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "expect": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["must_include"],
+        "properties": {
+          "must_include": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 0
+          },
+          "must_not": {
+            "type": "array",
+            "items": {"type": "string"},
+            "default": []
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "min_mu": {"type": "integer", "minimum": 0},
+              "depth": {"type": "string", "enum": ["mu_ids", "mu_snippets", "raw_quotes"]}
+            }
+          }
+        }
+      },
+      "budget": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "max_tokens": {"type": "integer", "minimum": 1}
+        }
+      },
+      "tags": {
+        "type": "array",
+        "items": {"type": "string"},
+        "default": []
+      }
+    }
+  }
+}

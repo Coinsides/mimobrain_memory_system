@@ -1,0 +1,155 @@
+- id: q001_time_decisions_7d
+  query: "过去7天我做了哪些关键决策？"
+  setup:
+    scope: {time_window_days: 7}
+    template_hint: time_overview_v1
+  expect:
+    must_include: ["决策", "证据"]
+    must_not: []
+    evidence: {min_mu: 5, depth: mu_ids}
+  budget: {max_tokens: 900}
+  tags: [time, decisions]
+
+- id: q002_time_tasks_7d
+  query: "过去7天我完成了哪些重要任务？"
+  setup:
+    scope: {time_window_days: 7}
+  expect:
+    must_include: ["任务", "证据"]
+    must_not: []
+    evidence: {min_mu: 5, depth: mu_ids}
+  budget: {max_tokens: 900}
+  tags: [time, tasks]
+
+- id: q003_recent_workflow_changes
+  query: "最近记忆系统有哪些关键工程变更？请列出 PR/commit 线索并给出证据。"
+  setup:
+    scope: {time_window_days: 14}
+  expect:
+    must_include: ["PR", "commit", "证据"]
+    must_not: []
+    evidence: {min_mu: 8, depth: mu_ids}
+  budget: {max_tokens: 1100}
+  tags: [engineering, audit]
+
+- id: q004_privacy_policy_summary
+  query: "当前隐私导出策略是什么？org/public 导出默认包含哪些字段、排除哪些字段？"
+  expect:
+    must_include: ["private", "org", "public", "allow_snapshot", "allow_pointer"]
+    must_not: ["C:\\", "file://"]
+  budget: {max_tokens: 900}
+  tags: [privacy, export]
+
+- id: q005_sync_conflicts_policy
+  query: "manifest 同步冲突怎么分类？哪些是严重冲突，处理策略是什么？"
+  expect:
+    must_include: ["冲突", "严重", "policy"]
+    must_not: []
+  budget: {max_tokens: 900}
+  tags: [sync]
+
+- id: q006_run_dir_artifacts
+  query: "一次 sync pipeline run 目录里应该有哪些权威产物？各自的用途是什么？"
+  expect:
+    must_include: ["run_manifest", "sync_report", "tasks", "task_results", "patch_plans"]
+    must_not: []
+  budget: {max_tokens: 900}
+  tags: [sync, audit]
+
+- id: q007_patch_plan_location
+  query: "patch plan 为什么要写到 run_dir/patch_plans 而不是 base 旁边？"
+  expect:
+    must_include: ["run_dir", "审计", "污染"]
+    must_not: []
+  tags: [sync, engineering]
+
+- id: q008_task_journal_value
+  query: "Task journal 解决了什么问题？和 task_results.jsonl 的区别是什么？"
+  expect:
+    must_include: ["sqlite", "query", "replay", "task_results"]
+    must_not: []
+  tags: [journal]
+
+- id: q009_replay_context
+  query: "replay task 需要哪些上下文？当前系统记录了哪些 context 字段？"
+  expect:
+    must_include: ["vault_roots", "run_id", "run_dir"]
+    must_not: []
+  tags: [journal, replay]
+
+- id: q010_export_mu_sanitization
+  query: "export_mu 在 public 导出时，pointer/snapshot 会如何处理？"
+  expect:
+    must_include: ["pointer", "snapshot", "payload", "<REDACTED"]
+    must_not: ["C:\\", "file://"]
+  tags: [privacy, export]
+
+- id: q011_export_bundle_evidence_depth
+  query: "export_bundle 在 org/public 默认如何裁剪 evidence？什么情况下会保留 pointer/snapshot？"
+  expect:
+    must_include: ["evidence", "mu_id", "share_policy"]
+    must_not: ["C:\\", "file://"]
+  tags: [privacy, bundle]
+
+- id: q012_bundle_schema_required
+  query: "bundle_v0_1 合同要求的最小字段有哪些？"
+  expect:
+    must_include: ["bundle_id", "template", "scope", "source_mu_ids", "created_at", "evidence"]
+    must_not: []
+  tags: [bundle, contracts]
+
+- id: q013_ms_export_cli
+  query: "ms_export 支持哪些 kind？auto 推断规则是什么？输出格式分别是什么？"
+  expect:
+    must_include: ["auto", "mu", "bundle", "JSONL", "JSON"]
+    must_not: []
+  tags: [cli, export]
+
+- id: q014_ms_doctor_cli
+  query: "ms_doctor 有哪些子命令？分别做什么？"
+  expect:
+    must_include: ["manifest", "verify", "repair"]
+    must_not: []
+  tags: [cli, doctor]
+
+- id: q015_optional_journal_switch
+  query: "哪些工具默认不写 journal？如何启用 summary-only journaling？"
+  expect:
+    must_include: ["--journal-db", "summary"]
+    must_not: []
+  tags: [journal, cli]
+
+- id: q016_idempotency_keys
+  query: "TaskSpec 里的 idempotency_key 设计目的是什么？同步/导出里如何用？"
+  expect:
+    must_include: ["idempotency_key", "幂等", "dedup"]
+    must_not: []
+  tags: [idempotency]
+
+- id: q017_append_only_principle
+  query: "系统里哪些东西必须 append-only？为什么？"
+  expect:
+    must_include: ["append-only", "audit", "replay"]
+    must_not: []
+  tags: [principles]
+
+- id: q018_snapshot_degrade_rule
+  query: "snapshot 的降级规则是什么？pointer 不可用时应该怎么标记？"
+  expect:
+    must_include: ["evidence_degraded", "pointer", "snapshot"]
+    must_not: []
+  tags: [snapshot]
+
+- id: q019_golden_usage
+  query: "Golden Set 的目的是什么？每次合并 PR 应该如何使用它？"
+  expect:
+    must_include: ["回归", "报告", "CI"]
+    must_not: []
+  tags: [eval]
+
+- id: q020_security_paths
+  query: "public/org 导出为什么必须去掉绝对路径？有哪些典型泄露来源？"
+  expect:
+    must_include: ["绝对路径", "泄露", "file://"]
+    must_not: []
+  tags: [privacy, security]
