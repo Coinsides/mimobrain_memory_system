@@ -33,6 +33,14 @@ def test_search_mu_fts_and_filters(tmp_path: Path):
     res = search_mu(db, query="travel")
     assert [r.mu_id for r in res] == ["mu_a"]
 
+    # snippets
+    res_snip = search_mu(db, query="travel", include_snippet=True)
+    assert res_snip[0].summary is not None
+
+    # target-level visibility (public should hide private)
+    res_pub = search_mu(db, query=None, target_level="public", include_snippet=True)
+    assert [r.mu_id for r in res_pub] == ["mu_b"]
+
     res2 = search_mu(db, tag="study")
     assert [r.mu_id for r in res2] == ["mu_b"]
 

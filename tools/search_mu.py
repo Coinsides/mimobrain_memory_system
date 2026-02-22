@@ -29,6 +29,32 @@ class SearchResult:
     reason: dict
 
 
+def _rank_privacy(level: str | None) -> int:
+    # Higher rank = more restrictive
+    return {"public": 0, "org": 1, "private": 2}.get(level or "private", 2)
+
+
+def _make_snippet(summary: str | None, query: str | None, *, max_chars: int = 220) -> str | None:
+    if not summary:
+        return None
+    s = summary.strip()
+    if len(s) <= max_chars:
+        return s
+    if query and query.strip():
+        q = query.strip()
+        i = s.lower().find(q.lower())
+        if i >= 0:
+            start = max(0, i - 60)
+            end = min(len(s), i + len(q) + 120)
+            chunk = s[start:end]
+            if start > 0:
+                chunk = "…" + chunk
+            if end < len(s):
+                chunk = chunk + "…"
+            return chunk
+    return s[: max_chars - 1] + "…"
+
+
 def search_mu(
     db_path: Path,
     *,
@@ -37,6 +63,8 @@ def search_mu(
     until: str | None = None,
     tag: str | None = None,
     privacy: str | None = None,
+    target_level: str = "private",
+    include_snippet: bool = False,
     limit: int = 20,
 ) -> list[SearchResult]:
     init_db(db_path)
@@ -70,7 +98,7 @@ def search_mu(
         where.append("mu_tag.tag = :tag")
         params["tag"] = tag
 
-    q = f"SELECT mu.mu_id, mu.summary, {score_expr} as score FROM mu " + " ".join(joins)
+    q = f"SELECT mu.mu_id, mu.summary, mu.privacy_level, {score_expr} as score FROM mu " + " ".join(joins)
     if where:
         q += " WHERE " + " AND ".join(where)
 
@@ -88,7 +116,12 @@ def search_mu(
     for r in rows:
         mu_id = r[0]
         summary = r[1]
-        score = r[2]
+        privacy_level = r[2]
+        score = r[3]
+
+        # Enforce target-level visibility
+        if _rank_privacy(str(privacy_level) if privacy_level is not None else None) > _rank_privacy(target_level):
+            continue
 
         reason: dict = {"filters": {}}
         if query and query.strip():
@@ -100,7 +133,20 @@ def search_mu(
         if privacy:
             reason["filters"]["privacy"] = privacy
 
-        out.append(SearchResult(mu_id=mu_id, score=score, summary=summary, reason=reason))
+        if include_snippet:
+            reason["snippet"] = {"max_chars": 220}
+            snippet = _make_snippet(summary, query)
+        else:
+            snippet = None
+
+        out.append(
+            SearchResult(
+                mu_id=mu_id,
+                score=score,
+                summary=snippet if include_snippet else summary,
+                reason=reason,
+            )
+        )
 
     return out
 
@@ -115,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--until", default=None)
     p.add_argument("--tag", default=None)
     p.add_argument("--privacy", default=None, choices=[None, "private", "org", "public"])
+    p.add_argument("--target-level", default="private", choices=["private", "org", "public"], help="Visibility level for returned results/snippets")
+    p.add_argument("--snippets", action="store_true", help="Include snippet text (summary-based) in output")
     p.add_argument("--limit", type=int, default=20)
     ns = p.parse_args(argv)
 
@@ -125,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
         until=ns.until,
         tag=ns.tag,
         privacy=ns.privacy,
+        target_level=ns.target_level,
+        include_snippet=bool(ns.snippets),
         limit=ns.limit,
     )
 
