@@ -55,6 +55,29 @@ def _make_snippet(summary: str | None, query: str | None, *, max_chars: int = 22
     return s[: max_chars - 1] + "…"
 
 
+def _looks_like_cjk(s: str) -> bool:
+    # Very small heuristic: if the query contains any CJK Unified Ideographs,
+    # FTS5 default tokenizer may not segment it well. Fall back to LIKE.
+    return any("\u4e00" <= ch <= "\u9fff" for ch in s)
+
+
+def _looks_like_unsafe_fts(s: str) -> bool:
+    # FTS5 MATCH has its own query syntax and is easy to break with punctuation,
+    # leading dashes, operators, etc. We prefer LIKE unless the query is simple.
+    s = s.strip()
+    if not s:
+        return False
+    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _")
+    for ch in s:
+        if ch in allowed:
+            continue
+        # allow basic CJK too (handled by _looks_like_cjk)
+        if "\u4e00" <= ch <= "\u9fff":
+            continue
+        return True
+    return False
+
+
 def search_mu(
     db_path: Path,
     *,
@@ -74,11 +97,18 @@ def search_mu(
     joins = []
 
     # base select
-    if query and query.strip():
+    use_like = bool(query and query.strip() and (_looks_like_cjk(query.strip()) or _looks_like_unsafe_fts(query.strip())))
+
+    if query and query.strip() and not use_like:
         joins.append("JOIN mu_fts ON mu_fts.mu_id = mu.mu_id")
         where.append("mu_fts MATCH :q")
         params["q"] = query
         score_expr = "bm25(mu_fts)"
+    elif query and query.strip() and use_like:
+        # LIKE fallback (no bm25 score)
+        where.append("mu.summary LIKE :q_like")
+        params["q_like"] = f"%{query.strip()}%"
+        score_expr = "NULL"
     else:
         score_expr = "NULL"
 
@@ -102,7 +132,7 @@ def search_mu(
     if where:
         q += " WHERE " + " AND ".join(where)
 
-    if query and query.strip():
+    if query and query.strip() and not use_like:
         q += " ORDER BY score ASC"
     else:
         q += " ORDER BY mu.time DESC NULLS LAST"

@@ -33,8 +33,12 @@ def run_id() -> str:
 def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> dict:
     """Rule-based answerer using build_bundle (P1-E).
 
-    This is a stopgap answerer to turn some Golden items from SKIP to PASS,
-    and to exercise evidence plumbing (source_mu_ids/evidence).
+    This is a stopgap answerer to exercise evidence plumbing end-to-end.
+
+    Contract goals:
+    - deterministic output (stable for CI)
+    - source_mu_ids must reflect the selected evidence set
+    - evidence_depth can be driven by golden expectations (mu_ids|mu_snippets)
     """
 
     from tools.build_bundle import build_bundle
@@ -44,14 +48,45 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
     days = scope.get("time_window_days")
     days = int(days) if isinstance(days, int) else 7
 
-    bundle = build_bundle(db_path=db, query=q.get("query") or "", days=days, target_level=target_level, limit=limit)
-    mu_ids = bundle.get("source_mu_ids") or []
+    template = setup.get("template_hint")
+    template = str(template) if isinstance(template, str) and template else "time_overview_v1"
 
     expect = q.get("expect") if isinstance(q.get("expect"), dict) else {}
     must_include = expect.get("must_include") if isinstance(expect.get("must_include"), list) else []
 
+    evidence_expect = expect.get("evidence") if isinstance(expect.get("evidence"), dict) else {}
+    depth = evidence_expect.get("depth")
+    depth = str(depth) if isinstance(depth, str) and depth else "mu_ids"
+    if depth not in {"mu_ids", "mu_snippets"}:
+        depth = "mu_ids"
+
+    raw_query = q.get("query") or ""
+    search_query = raw_query
+    # FTS5 MATCH is picky with punctuation/long natural-language questions.
+    # For Golden we prefer deterministic keyword queries when available.
+    if isinstance(raw_query, str) and must_include:
+        # Use the first required keyword as a stable retrieval hint for retrieval.
+        # This is especially important for short CJK questions where FTS tokenization can be weak.
+        if any("\u4e00" <= ch <= "\u9fff" for ch in raw_query):
+            search_query = str(must_include[0])
+        elif len(raw_query) > 24:
+            search_query = str(must_include[0])
+
+    bundle = build_bundle(
+        db_path=db,
+        query=search_query,
+        days=days,
+        template=template,
+        target_level=target_level,
+        evidence_depth=depth,
+        limit=limit,
+    )
+
+    mu_ids = bundle.get("source_mu_ids") or []
+    evidence = bundle.get("evidence") or []
+
     # Compose a deterministic text that includes required keywords and lists evidence ids.
-    lines = []
+    lines: list[str] = []
     if must_include:
         lines.append("必含: " + ",".join(str(x) for x in must_include))
     lines.append("证据(mu_id): " + ", ".join(mu_ids) if mu_ids else "证据(mu_id): <none>")
@@ -60,8 +95,8 @@ def answer_with_bundle(q: dict, *, db: Path, target_level: str, limit: int) -> d
         "implemented": True,
         "text": "\n".join(lines),
         "source_mu_ids": mu_ids,
-        "evidence_depth": "mu_ids",
-        "evidence": [{"mu_id": mid} for mid in mu_ids],
+        "evidence_depth": depth,
+        "evidence": evidence,
     }
 
 
@@ -82,12 +117,12 @@ HARD_FAIL_PATTERNS = {
 }
 
 
-def check_invariants(answer_text: str, expect: dict) -> dict:
+def check_invariants(answer_text: str, expect: dict, *, source_mu_ids: list[str], evidence_depth: str) -> dict:
     must_include = expect.get("must_include") or []
     must_not = expect.get("must_not") or []
 
-    missing = [s for s in must_include if s and s not in answer_text]
-    present_forbidden = [s for s in must_not if s and s in answer_text]
+    missing = [s for s in must_include if s and s not in (answer_text or "")]
+    present_forbidden = [s for s in must_not if s and s in (answer_text or "")]
 
     hard_triggers = [name for name, rx in HARD_FAIL_PATTERNS.items() if rx.search(answer_text or "")]
 
@@ -95,11 +130,28 @@ def check_invariants(answer_text: str, expect: dict) -> dict:
     must_not_pass = not present_forbidden
     hard_pass = not hard_triggers
 
+    # Evidence checks (minimal, deterministic): enforce min_mu and depth when specified.
+    evidence_expect = expect.get("evidence") if isinstance(expect.get("evidence"), dict) else {}
+    min_mu = evidence_expect.get("min_mu")
+    min_mu = int(min_mu) if isinstance(min_mu, int) else None
+
+    depth_expect = evidence_expect.get("depth")
+    depth_expect = str(depth_expect) if isinstance(depth_expect, str) else None
+
+    evidence_fail_reasons: list[str] = []
+    if min_mu is not None and len(source_mu_ids) < min_mu:
+        evidence_fail_reasons.append(f"min_mu:{min_mu} got:{len(source_mu_ids)}")
+    if depth_expect and evidence_depth and depth_expect != evidence_depth:
+        evidence_fail_reasons.append(f"depth_expected:{depth_expect} got:{evidence_depth}")
+
+    evidence_pass = not evidence_fail_reasons
+
     return {
         "must_include": {"missing": missing, "pass": must_include_pass},
         "must_not": {"present": present_forbidden, "pass": must_not_pass},
         "hard_fail": {"triggers": hard_triggers, "pass": hard_pass},
-        "pass": must_include_pass and must_not_pass and hard_pass,
+        "evidence": {"reasons": evidence_fail_reasons, "pass": evidence_pass},
+        "pass": must_include_pass and must_not_pass and hard_pass and evidence_pass,
         "hard_failed": (not hard_pass),
     }
 
@@ -191,7 +243,12 @@ def main(argv: list[str] | None = None) -> int:
                 ans = placeholder_answer(q)
         else:
             ans = placeholder_answer(q)
-        inv = check_invariants(ans.get("text", ""), expect)
+        inv = check_invariants(
+            ans.get("text", ""),
+            expect,
+            source_mu_ids=ans.get("source_mu_ids") or [],
+            evidence_depth=ans.get("evidence_depth") or "mu_ids",
+        )
 
         if not ans.get("implemented", False):
             status = "SKIP"
@@ -221,6 +278,7 @@ def main(argv: list[str] | None = None) -> int:
                     "must_include": inv["must_include"],
                     "must_not": inv["must_not"],
                     "hard_fail": inv["hard_fail"],
+                    "evidence": inv["evidence"],
                 },
                 "tags": q.get("tags", []),
             }

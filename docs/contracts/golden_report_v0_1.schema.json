@@ -58,7 +58,7 @@
           "checks": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["must_include", "must_not", "hard_fail"],
+            "required": ["must_include", "must_not", "hard_fail", "evidence"],
             "properties": {
               "must_include": {
                 "type": "object",
@@ -84,6 +84,15 @@
                 "required": ["triggers", "pass"],
                 "properties": {
                   "triggers": {"type": "array", "items": {"type": "string"}},
+                  "pass": {"type": "boolean"}
+                }
+              },
+              "evidence": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["reasons", "pass"],
+                "properties": {
+                  "reasons": {"type": "array", "items": {"type": "string"}},
                   "pass": {"type": "boolean"}
                 }
               }

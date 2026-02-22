@@ -150,6 +150,6 @@
 - id: q020_security_paths
   query: "public/org 导出为什么必须去掉绝对路径？有哪些典型泄露来源？"
   expect:
-    must_include: ["绝对路径", "泄露", "file://"]
-    must_not: []
+    must_include: ["绝对路径", "泄露"]
+    must_not: ["C:\\", "file://"]
   tags: [privacy, security]
