@@ -30,3 +30,4 @@
 - P1-A: add meta.sqlite schema + index_mu tool (full rebuild) + tests.
 - P1-B: add search_mu (FTS + filters + reason) + tests.
 - P1-D: add view cache table + minimal invalidate_by_mu_ids.
+- P1-E: add minimal bundle builder (build_bundle) aligned with bundle_v0_1.
