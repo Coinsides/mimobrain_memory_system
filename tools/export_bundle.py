@@ -89,6 +89,17 @@ def _redact_evidence_item(item: dict, *, target_level: str) -> dict:
 def export_bundle(bundle: dict, *, target_level: str) -> dict:
     b = _deepcopy(bundle)
 
+    # Best-effort validation (do not fail hard; export should be usable as a sanitizer)
+    try:
+        from tools.bundle_validate import validate_bundle
+
+        errs = validate_bundle(b)
+        if errs:
+            b.setdefault("diagnostics", {})
+            b["diagnostics"]["bundle_schema_errors"] = errs[:50]
+    except Exception:
+        pass
+
     # Evidence
     ev = b.get("evidence")
     if isinstance(ev, list):
