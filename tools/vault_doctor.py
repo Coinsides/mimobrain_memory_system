@@ -1,13 +1,12 @@
-"""Minimal doctor/verify/repair helpers (P0-H v0.1).
+"""Doctor/verify/repair helpers (P0-H v0.1).
 
-This is a *minimal* implementation:
+v0.1 scope:
 - doctor: validate manifest jsonl lines against jsonschema (dev dependency)
-- verify: placeholder (hash verification is a follow-up)
-- repair: resolve pointer URI by sha256 lookup in raw_manifest (follow-up)
+- verify: verify file sha256 for `vault://...` URIs given an explicit vault_roots mapping
+- repair: suggest a replacement URI by sha256 lookup in manifests
 
-The full multi-replica merge/repair logic is planned in later tasks.
+Multi-replica selection is simplified in v0.1; full merge/conflict handling is P0-F/P0-7.
 """
-
 from __future__ import annotations
 
 import json
@@ -43,3 +42,22 @@ def doctor_manifest(manifest_path: Path, schema_path: Path) -> list[str]:
             errors.append(f"line {i}: schema error: {e}")
 
     return errors
+
+
+def verify_manifest(manifest_path: Path, *, vault_roots: dict[str, str]) -> list[str]:
+    """Verify sha256 for each record in manifest.
+
+    Only supports `vault://...` URIs in v0.1.
+    """
+    from .manifest_io import iter_jsonl
+    from .vault_ops import verify_manifest_records
+
+    return verify_manifest_records(iter_jsonl(manifest_path), vault_roots=vault_roots)
+
+
+def repair_suggest_by_sha256(manifest_path: Path, *, sha256: str) -> str | None:
+    """Suggest a URI for a sha256 by searching the manifest."""
+    from .manifest_io import iter_jsonl
+    from .vault_ops import repair_uri_by_sha256
+
+    return repair_uri_by_sha256(sha256=sha256, manifest_records=iter_jsonl(manifest_path))
