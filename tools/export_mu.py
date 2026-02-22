@@ -28,6 +28,8 @@ from typing import Iterable
 
 import yaml
 
+from tools.privacy_policy import ensure_privacy_defaults, export_share_policy
+
 
 LOCAL_PATH_RE = re.compile(r"^[A-Za-z]:\\|^/|^file://", re.IGNORECASE)
 
@@ -65,15 +67,15 @@ def sanitize_pointer(pointer: list, *, target_level: str) -> list:
 
 
 def redact_mu(mu: dict, *, target_level: str) -> dict:
-    mu = json.loads(json.dumps(mu))  # deep copy
+    mu = ensure_privacy_defaults(mu)
 
     privacy = mu.get("privacy") if isinstance(mu.get("privacy"), dict) else {}
     level = privacy.get("level", "private")
     redact = privacy.get("redact", "none")
-    share = privacy.get("share_policy") if isinstance(privacy.get("share_policy"), dict) else {}
 
-    allow_snapshot = bool(share.get("allow_snapshot", False))
-    allow_pointer = bool(share.get("allow_pointer", False))
+    share_eff = export_share_policy(mu, target_level=target_level)
+    allow_snapshot = bool(share_eff.get("allow_snapshot"))
+    allow_pointer = bool(share_eff.get("allow_pointer"))
 
     # Enforce: do not export higher-sensitivity data into lower target.
     if target_rank(level) > target_rank(target_level):
