@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mimobrain.local/schemas/manifest_patch_plan_v0_1.json",
+  "title": "manifest patch plan v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["plan_version", "created_at", "kind", "base_path", "incoming_path", "dry_run", "actions", "stats"],
+  "properties": {
+    "plan_version": {"type": "string", "const": "0.1"},
+    "created_at": {"type": "string"},
+    "kind": {"type": "string", "enum": ["raw", "mu", "asset"]},
+    "base_path": {"type": "string"},
+    "incoming_path": {"type": "string"},
+    "dry_run": {"type": "boolean"},
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["append_new_records", "skipped_exact_dupes", "blocked_conflicts"],
+      "properties": {
+        "append_new_records": {"type": "integer", "minimum": 0},
+        "skipped_exact_dupes": {"type": "integer", "minimum": 0},
+        "blocked_conflicts": {"type": "integer", "minimum": 0}
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "message"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "APPEND_RECORD",
+              "SUGGEST_URI_ALIAS",
+              "BLOCKED_CONFLICT",
+              "NOTE"
+            ]
+          },
+          "message": {"type": "string"},
+          "record": {"type": ["object", "null"]},
+          "from_uri": {"type": ["string", "null"]},
+          "to_uri": {"type": ["string", "null"]},
+          "sha256": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}
