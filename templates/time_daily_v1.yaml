@@ -1,0 +1,12 @@
+name: time_daily_v1
+version: "1.0"
+description: "Daily breakdown within a time window."
+defaults:
+  scope_days: 7
+  granularity:
+    detail_level: detailed
+    time_resolution: day
+    evidence_depth: mu_ids
+  budget:
+    max_mu: 80
+    max_tokens: 1400

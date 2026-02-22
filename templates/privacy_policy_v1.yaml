@@ -1,0 +1,12 @@
+name: privacy_policy_v1
+version: "1.0"
+description: "Summarize privacy/export policy; evidence is optional but should be safe."
+defaults:
+  scope_days: 30
+  granularity:
+    detail_level: normal
+    time_resolution: week
+    evidence_depth: mu_ids
+  budget:
+    max_mu: 50
+    max_tokens: 900

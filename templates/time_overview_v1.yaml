@@ -1,0 +1,12 @@
+name: time_overview_v1
+version: "1.0"
+description: "Default time-window overview."
+defaults:
+  scope_days: 7
+  granularity:
+    detail_level: normal
+    time_resolution: day
+    evidence_depth: mu_ids
+  budget:
+    max_mu: 50
+    max_tokens: 900
