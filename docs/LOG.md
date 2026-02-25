@@ -50,5 +50,8 @@
 - P1 golden policy (v0.1): simplest gate — if bundle diagnostics indicates evidence_degraded=true, Golden marks the question FAIL; raw_quotes requires snippet presence.
 
 ## 2026-02-25
+- Config: remove hardcoded local data root paths from sync/repair runners; prefer ms_config.json (runs_root_* + vault_roots) or explicit --runs-root.
+
+## 2026-02-25
 - CI: fix GitHub Actions workflow YAML parsing (quote step names containing colons; workflow now actually runs instead of failing instantly).
 - CI: ruff lint/format hygiene pass + auto-format; tests remain green.
