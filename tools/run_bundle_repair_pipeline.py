@@ -6,8 +6,8 @@ Pipeline:
 - execute tasks via repair_executor -> task_results.jsonl
 - write run_manifest.json
 
-Authoritative outputs live outside the repo, under:
-  C:\\Mimo\\mimo_data\\memory_system\\runs\\repair\\RUN-<timestamp>\\
+Authoritative outputs live outside the repo (data root), under:
+  <DATA_ROOT>\\runs\\repair\\RUN-<timestamp>\\
 
 v0.1 scope:
 - Only REPAIR_POINTER suggestions, no MU rewrite.
@@ -22,7 +22,7 @@ from pathlib import Path
 
 from tools.repair_executor import ExecContext, exec_task
 
-DEFAULT_RUNS_ROOT = Path(r"C:\Mimo\mimo_data\memory_system\runs\repair")
+# No hardcoded runs root; pass --runs-root or provide --config.
 
 
 def now_run_id() -> str:
@@ -69,6 +69,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", required=True, help="meta.sqlite")
     ap.add_argument("--config", default=None, help="Path to ms_config.json (optional)")
+    ap.add_argument(
+        "--runs-root",
+        default=None,
+        help="Authoritative runs root (recommended). If omitted, tries to use config.runs_root_repair.",
+    )
     ap.add_argument("--query", required=True)
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--template", default="time_overview_v1")
@@ -79,10 +84,9 @@ def main(argv: list[str] | None = None) -> int:
         "--vault-root",
         action="append",
         default=[],
-        help="Vault root mapping like default=C:/Mimo/vaults/default (repeatable)",
+        help="Vault root mapping like default=C:/.../vaults/default (repeatable)",
     )
     ap.add_argument("--raw-manifest", default=None, help="raw_manifest.jsonl path")
-    ap.add_argument("--runs-root", default=str(DEFAULT_RUNS_ROOT))
     ap.add_argument(
         "--index-db",
         default=None,
@@ -95,12 +99,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     ns = ap.parse_args(argv)
 
-    run_id = now_run_id()
-    run_dir = Path(ns.runs_root) / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
-
     vault_roots: dict[str, str] = {}
     raw_manifest = ns.raw_manifest
+    runs_root: str | None = ns.runs_root
 
     if ns.config:
         from tools.ms_config import load_config
@@ -110,6 +111,16 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(vr, dict):
             vault_roots.update({str(k): str(v) for k, v in vr.items()})
         raw_manifest = cfg.get("raw_manifest_path") or raw_manifest
+        runs_root = runs_root or cfg.get("runs_root_repair")
+
+    if not runs_root:
+        raise SystemExit(
+            "missing runs root: pass --runs-root or provide --config with runs_root_repair"
+        )
+
+    run_id = now_run_id()
+    run_dir = Path(runs_root) / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
 
     for item in ns.vault_root:
         if "=" not in item:

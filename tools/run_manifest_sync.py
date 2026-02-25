@@ -1,7 +1,7 @@
 """Run manifest sync (report + tasks) into a local run directory (authoritative).
 
-Authoritative outputs live outside the repo, under:
-  C:\Mimo\mimo_data\memory_system\runs\sync\RUN-<timestamp>\
+Authoritative outputs live outside the repo (data root), under:
+  <DATA_ROOT>\runs\sync\RUN-<timestamp>\
 
 Repo keeps only redacted examples.
 
@@ -36,7 +36,8 @@ from tools.manifest_sync import analyze_sync
 from tools.manifest_sync_tasks import tasks_from_report
 
 
-DEFAULT_RUNS_ROOT = Path(r"C:\Mimo\mimo_data\memory_system\runs\sync")
+# No hardcoded runs root; pass --runs-root or provide --config.
+DEFAULT_RUNS_ROOT = None
 
 
 def now_run_id() -> str:
@@ -70,11 +71,32 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--kind", required=True, choices=["raw", "mu", "asset"])
     p.add_argument("--base", required=True)
     p.add_argument("--incoming", required=True)
-    p.add_argument("--runs-root", default=str(DEFAULT_RUNS_ROOT))
+    p.add_argument(
+        "--config",
+        default=None,
+        help="Path to ms_config.json (optional; can provide runs_root_sync)",
+    )
+    p.add_argument(
+        "--runs-root",
+        default=None,
+        help="Authoritative runs root. If omitted, tries to use config.runs_root_sync.",
+    )
     ns = p.parse_args(argv)
 
+    runs_root: str | None = ns.runs_root
+    if ns.config:
+        from tools.ms_config import load_config
+
+        cfg = load_config(ns.config)
+        runs_root = runs_root or cfg.get("runs_root_sync")
+
+    if not runs_root:
+        raise SystemExit(
+            "missing runs root: pass --runs-root or provide --config with runs_root_sync"
+        )
+
     run_id = now_run_id()
-    run_dir = Path(ns.runs_root) / run_id
+    run_dir = Path(runs_root) / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
     report = analyze_sync(kind=ns.kind, base_path=ns.base, incoming_path=ns.incoming)

@@ -13,6 +13,8 @@
     "raw_manifest_path": {"type": ["string", "null"]},
     "mu_manifest_path": {"type": ["string", "null"]},
     "mu_root": {"type": ["string", "null"]},
-    "runs_root_repair": {"type": ["string", "null"]}
+    "runs_root_repair": {"type": ["string", "null"]},
+    "runs_root_sync": {"type": ["string", "null"]},
+    "runs_root_golden": {"type": ["string", "null"]}
   }
 }

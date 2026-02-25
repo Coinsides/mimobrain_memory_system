@@ -2,8 +2,8 @@
 
 This is the end-to-end glue for P0-7 (analysis + planning + conservative execution).
 
-Authoritative outputs live outside the repo, under:
-  C:\\Mimo\\mimo_data\\memory_system\\runs\\sync\\RUN-<timestamp>\\
+Authoritative outputs live outside the repo (data root), under:
+  <DATA_ROOT>\\runs\\sync\\RUN-<timestamp>\\
 
 This script:
 - analyze_sync(kind, base, incoming) -> sync_report.<kind>.json
@@ -35,7 +35,7 @@ from tools.manifest_sync import analyze_sync
 from tools.manifest_sync_tasks import tasks_from_report
 
 
-DEFAULT_RUNS_ROOT = Path(r"C:\Mimo\mimo_data\memory_system\runs\sync")
+# No hardcoded runs root; pass --runs-root or provide --config.
 
 
 def now_run_id() -> str:
@@ -82,17 +82,42 @@ def main(argv: list[str] | None = None) -> int:
         "--vault-root",
         action="append",
         default=[],
-        help="Vault root mapping like default=C:/Mimo/vaults/default (repeatable)",
+        help="Vault root mapping like default=C:/.../vaults/default (repeatable)",
     )
-    p.add_argument("--runs-root", default=str(DEFAULT_RUNS_ROOT))
+    p.add_argument(
+        "--config",
+        default=None,
+        help="Path to ms_config.json (optional; can provide runs_root_sync and vault_roots)",
+    )
+    p.add_argument(
+        "--runs-root",
+        default=None,
+        help="Authoritative runs root. If omitted, tries to use config.runs_root_sync.",
+    )
     p.add_argument("--apply", action="store_true")
     ns = p.parse_args(argv)
 
-    run_id = now_run_id()
-    run_dir = Path(ns.runs_root) / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
+    runs_root: str | None = ns.runs_root
 
     vault_roots: dict[str, str] = {}
+    if ns.config:
+        from tools.ms_config import load_config
+
+        cfg = load_config(ns.config)
+        runs_root = runs_root or cfg.get("runs_root_sync")
+        vr = cfg.get("vault_roots")
+        if isinstance(vr, dict):
+            vault_roots.update({str(k): str(v) for k, v in vr.items()})
+
+    if not runs_root:
+        raise SystemExit(
+            "missing runs root: pass --runs-root or provide --config with runs_root_sync"
+        )
+
+    run_id = now_run_id()
+    run_dir = Path(runs_root) / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
     for item in ns.vault_root:
         if "=" not in item:
             raise SystemExit(f"invalid --vault-root {item!r} (expected vault_id=path)")
