@@ -55,6 +55,7 @@
 - Spec lock: add `spec_lock.json` to pin mimo-spec commit for compat; add `tests/test_spec_compat.py` to ensure schemas import + spec_lock presence.
 - CI: install mimo-spec from GitHub using pinned commit in spec_lock.json (so compat tests run on CI).
 - Spec: bump pinned ref to include packaging fix (contracts/*.json included in mimo-spec wheel).
+- Fix: spec_lock pinned ref corrected to full commit sha (required for CI pip install via git).
 
 ## 2026-02-25
 - CI: fix GitHub Actions workflow YAML parsing (quote step names containing colons; workflow now actually runs instead of failing instantly).

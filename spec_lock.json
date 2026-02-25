@@ -2,7 +2,7 @@
   "mimo_spec": {
     "repo": "https://github.com/Coinsides/mimo-spec",
     "ref_type": "git_commit",
-    "ref": "13d23ce149cfcd8850ff9ad2a8c99e3113f6ba3a",
+    "ref": "13d23ce4e862755c20d67c9dbfca35a9ff157054",
     "notes": "Locked for MVP v4.1 one-shot run (real_mini). Update ref only alongside golden+smoke re-run."
   }
 }
