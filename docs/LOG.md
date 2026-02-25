@@ -51,6 +51,7 @@
 
 ## 2026-02-25
 - Config: remove hardcoded local data root paths from sync/repair runners; prefer ms_config.json (runs_root_* + vault_roots) or explicit --runs-root.
+- Docs: remove legacy example path (C:/Mimo/...) from tools/ms_config.py.
 
 ## 2026-02-25
 - CI: fix GitHub Actions workflow YAML parsing (quote step names containing colons; workflow now actually runs instead of failing instantly).
