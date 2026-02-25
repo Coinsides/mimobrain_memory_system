@@ -7,7 +7,7 @@ Purpose:
 Config format: JSON (ms_config_v0_1.schema.json)
 Example:
 {
-  "vault_roots": {"default": "C:/Mimo/mimo_data/memory_system/vaults/default"},
+  "vault_roots": {"default": "C:/memobrain/data/memory_system/vaults/default"},
   "raw_manifest_path": null
 }
 
