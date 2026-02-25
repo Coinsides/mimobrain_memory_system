@@ -24,6 +24,21 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: Install mimo-spec (pinned by spec_lock.json)
+        run: |
+          python - << 'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('spec_lock.json')
+          obj = json.loads(p.read_text(encoding='utf-8'))
+          ref = obj.get('mimo_spec', {}).get('ref')
+          if not ref:
+              raise SystemExit('missing mimo_spec.ref in spec_lock.json')
+          print(ref)
+          PY
+          pip install "git+https://github.com/Coinsides/mimo-spec.git@$(python -c \"import json;print(json.load(open('spec_lock.json'))['mimo_spec']['ref'])\")"
+
       - name: "Gate: require journal update for code changes (PR)"
         if: github.event_name == 'pull_request'
         env:
