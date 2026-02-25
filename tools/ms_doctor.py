@@ -90,7 +90,13 @@ def main(argv: list[str] | None = None) -> int:
             "task_id": task_id,
             "status": "OK" if ok else "ERROR",
             "elapsed_ms": None,
-            "outputs": [{"kind": "TEXT", "uri": None, "meta": {"errors": errs[:50], "error_count": len(errs)}}],
+            "outputs": [
+                {
+                    "kind": "TEXT",
+                    "uri": None,
+                    "meta": {"errors": errs[:50], "error_count": len(errs)},
+                }
+            ],
         }
         _journal(ns.journal_db, spec=spec, result=result)
 
@@ -107,7 +113,9 @@ def main(argv: list[str] | None = None) -> int:
         vault_roots = {}
         for item in ns.vault_root:
             if "=" not in item:
-                raise SystemExit(f"invalid --vault-root {item!r} (expected vault_id=path)")
+                raise SystemExit(
+                    f"invalid --vault-root {item!r} (expected vault_id=path)"
+                )
             k, v = item.split("=", 1)
             vault_roots[k] = v
 
@@ -127,7 +135,13 @@ def main(argv: list[str] | None = None) -> int:
             "task_id": task_id,
             "status": "OK" if ok else "ERROR",
             "elapsed_ms": None,
-            "outputs": [{"kind": "TEXT", "uri": None, "meta": {"errors": errs[:50], "error_count": len(errs)}}],
+            "outputs": [
+                {
+                    "kind": "TEXT",
+                    "uri": None,
+                    "meta": {"errors": errs[:50], "error_count": len(errs)},
+                }
+            ],
         }
         _journal(ns.journal_db, spec=spec, result=result)
 

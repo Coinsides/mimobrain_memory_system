@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 
@@ -133,7 +134,9 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     p = argparse.ArgumentParser()
-    p.add_argument("--report", required=True, help="Sync report JSON (from manifest_sync.py)")
+    p.add_argument(
+        "--report", required=True, help="Sync report JSON (from manifest_sync.py)"
+    )
     p.add_argument("--out", required=True, help="Output tasks path (jsonl)")
     ns = p.parse_args(argv)
 

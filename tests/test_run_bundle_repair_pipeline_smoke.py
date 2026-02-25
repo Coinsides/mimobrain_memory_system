@@ -7,7 +7,6 @@ def test_run_bundle_repair_pipeline_smoke(tmp_path: Path):
     import sqlite3
 
     from tools.meta_db import init_db
-    from tools.vault_ops import sha256_file
 
     # Build minimal db + mu with missing pointer but snapshot so repair triggers.
     db = tmp_path / "meta.sqlite"

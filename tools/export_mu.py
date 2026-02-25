@@ -59,7 +59,9 @@ def sanitize_pointer(pointer: list, *, target_level: str) -> list:
             continue
         uri = item.get("uri")
         if target_level in {"org", "public"} and isinstance(uri, str):
-            if LOCAL_PATH_RE.search(uri) or LOCAL_PATH_RE.search(item.get("path", "") if isinstance(item.get("path"), str) else ""):
+            if LOCAL_PATH_RE.search(uri) or LOCAL_PATH_RE.search(
+                item.get("path", "") if isinstance(item.get("path"), str) else ""
+            ):
                 # drop anything that looks like a local path
                 continue
         out.append(item)
@@ -83,7 +85,10 @@ def redact_mu(mu: dict, *, target_level: str) -> dict:
         return {
             "mu_id": mu.get("mu_id") or mu.get("id"),
             "schema_version": mu.get("schema_version"),
-            "export": {"skipped": True, "reason": f"privacy.level={level} > target={target_level}"},
+            "export": {
+                "skipped": True,
+                "reason": f"privacy.level={level} > target={target_level}",
+            },
         }
 
     # Pointer
@@ -118,7 +123,11 @@ def redact_mu(mu: dict, *, target_level: str) -> dict:
     if isinstance(mu.get("pointer"), list):
         cleaned = []
         for it in mu["pointer"]:
-            if isinstance(it, dict) and isinstance(it.get("path"), str) and LOCAL_PATH_RE.search(it["path"]):
+            if (
+                isinstance(it, dict)
+                and isinstance(it.get("path"), str)
+                and LOCAL_PATH_RE.search(it["path"])
+            ):
                 it = dict(it)
                 it["path"] = "<REDACTED_PATH>"
             cleaned.append(it)
@@ -139,7 +148,9 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--in", dest="inp", required=True, help="Input MU file or directory")
     p.add_argument("--out", required=True, help="Output JSONL path")
-    p.add_argument("--target-level", required=True, choices=["private", "org", "public"])
+    p.add_argument(
+        "--target-level", required=True, choices=["private", "org", "public"]
+    )
     ns = p.parse_args(argv)
 
     in_path = Path(ns.inp)

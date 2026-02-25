@@ -53,7 +53,12 @@ def test_executor_runs_sync_manifest_apply_dry_run(tmp_path: Path):
                 "parent_task_id": None,
                 "idempotency_key": "k",
                 "inputs": [],
-                "params": {"kind": "raw", "base_path": str(base), "incoming_path": str(inc), "dry_run": True},
+                "params": {
+                    "kind": "raw",
+                    "base_path": str(base),
+                    "incoming_path": str(inc),
+                    "dry_run": True,
+                },
             }
         ],
     )
@@ -69,5 +74,7 @@ def test_executor_runs_sync_manifest_apply_dry_run(tmp_path: Path):
     assert plan_path.exists()
 
     # Base should NOT have been modified in dry-run
-    lines = [l for l in base.read_text(encoding="utf-8").splitlines() if l.strip()]
+    lines = [
+        line for line in base.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
     assert len(lines) == 1

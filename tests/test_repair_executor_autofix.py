@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 
@@ -51,11 +50,21 @@ links:
         "created_at": "2026-02-22T00:00:00Z",
         "idempotency_key": "k",
         "inputs": [{"kind": "MU_SET", "ids": ["mu_old"]}],
-        "params": {"mu_id": "mu_old", "mu_path": str(mu_path), "sha256": sha, "uri": "file:///C:/tmp/x.txt"},
+        "params": {
+            "mu_id": "mu_old",
+            "mu_path": str(mu_path),
+            "sha256": sha,
+            "uri": "file:///C:/tmp/x.txt",
+        },
     }
 
     out_dir = tmp_path / "fixed"
-    out = exec_task(task, ExecContext(vault_roots={}, raw_manifest_path=str(manifest), out_mu_dir=str(out_dir)))
+    out = exec_task(
+        task,
+        ExecContext(
+            vault_roots={}, raw_manifest_path=str(manifest), out_mu_dir=str(out_dir)
+        ),
+    )
     assert out["status"] == "OK"
 
     mu_outputs = [o for o in out.get("outputs", []) if o.get("kind") == "MU"]

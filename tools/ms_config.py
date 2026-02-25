@@ -33,7 +33,12 @@ def load_config(path: str | Path) -> dict[str, Any]:
     try:
         import jsonschema
 
-        schema_path = Path(__file__).resolve().parents[1] / "docs" / "contracts" / "ms_config_v0_1.schema.json"
+        schema_path = (
+            Path(__file__).resolve().parents[1]
+            / "docs"
+            / "contracts"
+            / "ms_config_v0_1.schema.json"
+        )
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         jsonschema.Draft202012Validator(schema).validate(obj)
     except Exception:
@@ -41,15 +46,21 @@ def load_config(path: str | Path) -> dict[str, Any]:
         pass
 
     vault_roots = obj.get("vault_roots")
-    if not isinstance(vault_roots, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in vault_roots.items()):
+    if not isinstance(vault_roots, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in vault_roots.items()
+    ):
         raise ValueError("missing/invalid vault_roots")
 
     default_root = vault_roots.get("default")
     if isinstance(default_root, str) and default_root:
         if obj.get("raw_manifest_path") in (None, ""):
-            obj["raw_manifest_path"] = str(Path(default_root) / "manifests" / "raw_manifest.jsonl")
+            obj["raw_manifest_path"] = str(
+                Path(default_root) / "manifests" / "raw_manifest.jsonl"
+            )
         if obj.get("mu_manifest_path") in (None, ""):
-            obj["mu_manifest_path"] = str(Path(default_root) / "manifests" / "mu_manifest.jsonl")
+            obj["mu_manifest_path"] = str(
+                Path(default_root) / "manifests" / "mu_manifest.jsonl"
+            )
         if obj.get("mu_root") in (None, ""):
             obj["mu_root"] = str(Path(default_root) / "mu")
 

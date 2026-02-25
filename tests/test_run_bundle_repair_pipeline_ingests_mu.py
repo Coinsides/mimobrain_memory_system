@@ -101,4 +101,4 @@ snapshot:
     mu_manifest = vault_root / "manifests" / "mu_manifest.jsonl"
     assert mu_manifest.exists()
     txt = mu_manifest.read_text(encoding="utf-8")
-    assert "\"mu_id\"" in txt
+    assert '"mu_id"' in txt

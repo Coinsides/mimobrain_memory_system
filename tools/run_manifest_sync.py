@@ -19,6 +19,8 @@ Optional:
 
 from __future__ import annotations
 
+# ruff: noqa: E402  # This file intentionally edits sys.path for script execution.
+
 import hashlib
 import json
 import sys
@@ -94,8 +96,12 @@ def main(argv: list[str] | None = None) -> int:
         "inputs": {
             "base_path": ns.base,
             "incoming_path": ns.incoming,
-            "base_sha256": sha256_file(Path(ns.base)) if Path(ns.base).exists() else None,
-            "incoming_sha256": sha256_file(Path(ns.incoming)) if Path(ns.incoming).exists() else None,
+            "base_sha256": sha256_file(Path(ns.base))
+            if Path(ns.base).exists()
+            else None,
+            "incoming_sha256": sha256_file(Path(ns.incoming))
+            if Path(ns.incoming).exists()
+            else None,
         },
         "outputs": {
             "report_path": str(report_path),

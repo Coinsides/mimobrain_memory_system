@@ -7,6 +7,7 @@ v0.1 scope:
 
 Multi-replica selection is simplified in v0.1; full merge/conflict handling is P0-F/P0-7.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,7 +29,9 @@ def doctor_manifest(manifest_path: Path, schema_path: Path) -> list[str]:
     if not manifest_path.exists():
         return [f"missing manifest: {manifest_path}"]
 
-    for i, line in enumerate(manifest_path.read_text(encoding="utf-8").splitlines(), start=1):
+    for i, line in enumerate(
+        manifest_path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
         if not line.strip():
             continue
         try:
@@ -60,4 +63,6 @@ def repair_suggest_by_sha256(manifest_path: Path, *, sha256: str) -> str | None:
     from .manifest_io import iter_jsonl
     from .vault_ops import repair_uri_by_sha256
 
-    return repair_uri_by_sha256(sha256=sha256, manifest_records=iter_jsonl(manifest_path))
+    return repair_uri_by_sha256(
+        sha256=sha256, manifest_records=iter_jsonl(manifest_path)
+    )

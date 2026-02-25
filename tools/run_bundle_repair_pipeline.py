@@ -20,7 +20,6 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from tools.manifest_io import iter_jsonl
 from tools.repair_executor import ExecContext, exec_task
 
 DEFAULT_RUNS_ROOT = Path(r"C:\Mimo\mimo_data\memory_system\runs\repair")
@@ -45,7 +44,9 @@ def write_json(path: Path, obj: dict) -> str:
 
 def write_jsonl(path: Path, objs: list[dict]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = "".join(json.dumps(o, ensure_ascii=False) + "\n" for o in objs).encode("utf-8")
+    data = "".join(json.dumps(o, ensure_ascii=False) + "\n" for o in objs).encode(
+        "utf-8"
+    )
     path.write_bytes(data)
     return sha256_bytes(data)
 
@@ -71,7 +72,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--query", required=True)
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--template", default="time_overview_v1")
-    ap.add_argument("--target-level", default="private", choices=["private", "org", "public"])
+    ap.add_argument(
+        "--target-level", default="private", choices=["private", "org", "public"]
+    )
     ap.add_argument(
         "--vault-root",
         action="append",
@@ -80,8 +83,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--raw-manifest", default=None, help="raw_manifest.jsonl path")
     ap.add_argument("--runs-root", default=str(DEFAULT_RUNS_ROOT))
-    ap.add_argument("--index-db", default=None, help="Optional meta.sqlite path to re-index vault/mu after fixes")
-    ap.add_argument("--index-reset", action="store_true", help="If set with --index-db, reset db before indexing")
+    ap.add_argument(
+        "--index-db",
+        default=None,
+        help="Optional meta.sqlite path to re-index vault/mu after fixes",
+    )
+    ap.add_argument(
+        "--index-reset",
+        action="store_true",
+        help="If set with --index-db, reset db before indexing",
+    )
     ns = ap.parse_args(argv)
 
     run_id = now_run_id()
@@ -172,8 +183,12 @@ def main(argv: list[str] | None = None) -> int:
             from tools.vault_ingest_mu import ingest_mu_file
 
             for mu_file in sorted(fixed_mu_dir.rglob("*.mimo")):
-                ingest_mu_file(mu_file, vault_root=vault_roots["default"], vault_id="default")
-            mu_manifest_path = str(Path(vault_roots["default"]) / "manifests" / "mu_manifest.jsonl")
+                ingest_mu_file(
+                    mu_file, vault_root=vault_roots["default"], vault_id="default"
+                )
+            mu_manifest_path = str(
+                Path(vault_roots["default"]) / "manifests" / "mu_manifest.jsonl"
+            )
         except Exception:
             mu_manifest_path = None
 
@@ -184,7 +199,9 @@ def main(argv: list[str] | None = None) -> int:
             from tools.index_mu import index_mu_dir
 
             mu_root = Path(vault_roots["default"]) / "mu"
-            index_out = index_mu_dir(mu_root, Path(ns.index_db), reset=bool(ns.index_reset))
+            index_out = index_mu_dir(
+                mu_root, Path(ns.index_db), reset=bool(ns.index_reset)
+            )
         except Exception:
             index_out = None
 
@@ -194,7 +211,10 @@ def main(argv: list[str] | None = None) -> int:
         import subprocess
 
         git_head = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(Path(__file__).resolve().parents[1]))
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(Path(__file__).resolve().parents[1]),
+            )
             .decode("utf-8")
             .strip()
         )
@@ -228,7 +248,11 @@ def main(argv: list[str] | None = None) -> int:
             "index_db": ns.index_db,
             "index_out": index_out,
         },
-        "notes": {"authoritative": True, "v0_1": True, "emit_tasks_wrote": emit_summary.wrote},
+        "notes": {
+            "authoritative": True,
+            "v0_1": True,
+            "emit_tasks_wrote": emit_summary.wrote,
+        },
     }
     write_json(run_dir / "run_manifest.json", run_manifest)
 

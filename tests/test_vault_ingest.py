@@ -26,6 +26,11 @@ def test_vault_ingest_writes_manifest_and_copies_file(tmp_path: Path):
     assert obj["uri"].startswith("vault://default/raw/")
 
     # validates against schema
-    schema_path = Path(__file__).resolve().parents[1] / "docs" / "contracts" / "raw_manifest_line_v0_1.schema.json"
+    schema_path = (
+        Path(__file__).resolve().parents[1]
+        / "docs"
+        / "contracts"
+        / "raw_manifest_line_v0_1.schema.json"
+    )
     errors = doctor_manifest(res.manifest_path, schema_path)
     assert errors == []

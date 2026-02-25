@@ -10,20 +10,45 @@ def test_export_mu_respects_share_policy(tmp_path: Path):
         "mu_id": "mu_01JTEST",
         "content_hash": "sha256:" + "0" * 64,
         "idempotency": {"mu_key": "sha256:" + "1" * 64},
-        "meta": {"time": "t", "source": "s", "group_id": "g", "order": "1", "span": "1"},
+        "meta": {
+            "time": "t",
+            "source": "s",
+            "group_id": "g",
+            "order": "1",
+            "span": "1",
+        },
         "summary": "hello",
-        "pointer": [{"uri": "file://C:/secret.txt", "sha256": "sha256:" + "2" * 64, "locator": {"kind": "line_range", "start": 1, "end": 2}}],
+        "pointer": [
+            {
+                "uri": "file://C:/secret.txt",
+                "sha256": "sha256:" + "2" * 64,
+                "locator": {"kind": "line_range", "start": 1, "end": 2},
+            }
+        ],
         "snapshot": {
             "kind": "text",
             "codec": "plain",
             "size_bytes": 5,
             "created_at": "t",
-            "source_ref": {"uri": "file://C:/secret.txt", "sha256": "sha256:" + "2" * 64},
+            "source_ref": {
+                "uri": "file://C:/secret.txt",
+                "sha256": "sha256:" + "2" * 64,
+            },
             "payload": {"text": "secret"},
         },
         "links": {"corrects": [], "supersedes": [], "duplicate_of": []},
-        "privacy": {"level": "public", "redact": "none", "pii": [], "share_policy": {"allow_snapshot": False, "allow_pointer": False}},
-        "provenance": {"tool": "x", "tool_version": "0.1", "model": None, "prompt_version": None},
+        "privacy": {
+            "level": "public",
+            "redact": "none",
+            "pii": [],
+            "share_policy": {"allow_snapshot": False, "allow_pointer": False},
+        },
+        "provenance": {
+            "tool": "x",
+            "tool_version": "0.1",
+            "model": None,
+            "prompt_version": None,
+        },
     }
 
     p = tmp_path / "mu.mimo"

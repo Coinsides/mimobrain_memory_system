@@ -13,9 +13,7 @@ Design notes:
 
 from __future__ import annotations
 
-import base64
 import hashlib
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -82,7 +80,9 @@ def verify_manifest_records(
 
         actual = sha256_file(p)
         if actual != expected:
-            errors.append(f"sha256 mismatch for uri={uri}: expected={expected} actual={actual}")
+            errors.append(
+                f"sha256 mismatch for uri={uri}: expected={expected} actual={actual}"
+            )
 
     return errors
 
@@ -137,6 +137,8 @@ def repair_suggestions_for_missing(
         if p is None or not p.exists():
             new_uri = index.get(s)
             if new_uri and new_uri != uri:
-                suggestions.append(RepairSuggestion(old_uri=uri, sha256=s, suggested_uri=new_uri))
+                suggestions.append(
+                    RepairSuggestion(old_uri=uri, sha256=s, suggested_uri=new_uri)
+                )
 
     return suggestions

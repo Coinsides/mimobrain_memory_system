@@ -5,7 +5,11 @@ def test_downgrade_order_evidence_then_detail_then_time_then_scope():
     spec = CompiledSpec(
         template="t",
         scope_days=30,
-        granularity={"detail_level": "forensic", "time_resolution": "event", "evidence_depth": "mu_snippets"},
+        granularity={
+            "detail_level": "forensic",
+            "time_resolution": "event",
+            "evidence_depth": "mu_snippets",
+        },
         budget={"max_mu": 120, "max_tokens": 600},
     )
 
@@ -23,7 +27,11 @@ def test_downgrade_can_shrink_scope_as_last_resort():
     spec = CompiledSpec(
         template="t",
         scope_days=60,
-        granularity={"detail_level": "overview", "time_resolution": "week", "evidence_depth": "mu_ids"},
+        granularity={
+            "detail_level": "overview",
+            "time_resolution": "week",
+            "evidence_depth": "mu_ids",
+        },
         budget={"max_mu": 200, "max_tokens": 250},
     )
 

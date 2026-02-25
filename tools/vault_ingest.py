@@ -33,7 +33,12 @@ class IngestResult:
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def _mtime_iso(p: Path) -> str | None:
@@ -41,7 +46,12 @@ def _mtime_iso(p: Path) -> str | None:
         ts = p.stat().st_mtime
     except Exception:
         return None
-    return datetime.fromtimestamp(ts, timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.fromtimestamp(ts, timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def _guess_mime(p: Path) -> str:
@@ -104,7 +114,9 @@ def ingest_file(
     }
     append_jsonl(manifest_path_p, rec)
 
-    return IngestResult(raw_id=raw_id, uri=uri, dest_path=dest_path, manifest_path=manifest_path_p)
+    return IngestResult(
+        raw_id=raw_id, uri=uri, dest_path=dest_path, manifest_path=manifest_path_p
+    )
 
 
 def iter_files(inp: Path) -> Iterable[Path]:
@@ -121,9 +133,17 @@ def main(argv: list[str] | None = None) -> int:
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--in", dest="inp", required=True, help="Input file or directory")
-    ap.add_argument("--vault-root", required=True, help="Vault root directory (physical path)")
-    ap.add_argument("--vault-id", default="default", help="Vault logical id (default: default)")
-    ap.add_argument("--manifest", default=None, help="raw_manifest.jsonl path (default: <vault-root>/manifests/raw_manifest.jsonl)")
+    ap.add_argument(
+        "--vault-root", required=True, help="Vault root directory (physical path)"
+    )
+    ap.add_argument(
+        "--vault-id", default="default", help="Vault logical id (default: default)"
+    )
+    ap.add_argument(
+        "--manifest",
+        default=None,
+        help="raw_manifest.jsonl path (default: <vault-root>/manifests/raw_manifest.jsonl)",
+    )
     ap.add_argument("--copy-mode", choices=["copy2", "copy"], default="copy2")
     ns = ap.parse_args(argv)
 
@@ -133,7 +153,13 @@ def main(argv: list[str] | None = None) -> int:
 
     count = 0
     for p in iter_files(inp):
-        ingest_file(p, vault_root=ns.vault_root, vault_id=ns.vault_id, copy_mode=ns.copy_mode, manifest_path=ns.manifest)
+        ingest_file(
+            p,
+            vault_root=ns.vault_root,
+            vault_id=ns.vault_id,
+            copy_mode=ns.copy_mode,
+            manifest_path=ns.manifest,
+        )
         count += 1
 
     print(f"ingested_files={count}")

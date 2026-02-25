@@ -4,7 +4,6 @@ from pathlib import Path
 
 
 def test_build_bundle_uses_config_for_raw_quotes(tmp_path: Path):
-    import json
     import sqlite3
 
     from tools.meta_db import init_db
@@ -62,7 +61,8 @@ pointer:
             0.0,
         ),
     )
-    con.commit(); con.close()
+    con.commit()
+    con.close()
 
     cfg = {"vault_roots": {"default": str(vault_root)}}
 

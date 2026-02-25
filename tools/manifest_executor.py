@@ -21,7 +21,6 @@ import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from tools.manifest_apply_plan import apply_plan, plan_patch
 from tools.manifest_io import iter_jsonl
@@ -35,14 +34,26 @@ class ExecContext:
     tool_version: str = "0.1"
 
 
-def task_result(*, task_id: str, status: str, outputs: list[dict], diagnostics: list[dict], elapsed_ms: int) -> dict:
+def task_result(
+    *,
+    task_id: str,
+    status: str,
+    outputs: list[dict],
+    diagnostics: list[dict],
+    elapsed_ms: int,
+) -> dict:
     return {
         "task_id": task_id,
         "status": status,
         "outputs": outputs,
         "diagnostics": diagnostics,
         "stats": {"elapsed_ms": elapsed_ms, "tokens_in": 0, "tokens_out": 0},
-        "provenance": {"tool": "mimobrain_memory_system", "tool_version": "0.1", "model": None, "prompt_version": None},
+        "provenance": {
+            "tool": "mimobrain_memory_system",
+            "tool_version": "0.1",
+            "model": None,
+            "prompt_version": None,
+        },
     }
 
 
@@ -68,7 +79,14 @@ def exec_verify_manifest(task: dict, ctx: ExecContext) -> dict:
     return task_result(
         task_id=task_id,
         status=status,
-        outputs=[{"kind": "REPORT", "id": None, "uri": None, "meta": {"manifest": manifest_path}}],
+        outputs=[
+            {
+                "kind": "REPORT",
+                "id": None,
+                "uri": None,
+                "meta": {"manifest": manifest_path},
+            }
+        ],
         diagnostics=diags,
         elapsed_ms=int((time.time() - t0) * 1000),
     )
@@ -100,8 +118,14 @@ def exec_repair_manifest_uri(task: dict, ctx: ExecContext) -> dict:
                 return r["uri"]
         return None
 
-    preferred = first_uri(base_records) if policy == "prefer_base_uri" else first_uri(incoming_records)
-    observed = list({u for u in [first_uri(base_records), first_uri(incoming_records)] if u})
+    preferred = (
+        first_uri(base_records)
+        if policy == "prefer_base_uri"
+        else first_uri(incoming_records)
+    )
+    observed = list(
+        {u for u in [first_uri(base_records), first_uri(incoming_records)] if u}
+    )
 
     diagnostics = [
         {
@@ -116,7 +140,14 @@ def exec_repair_manifest_uri(task: dict, ctx: ExecContext) -> dict:
     return task_result(
         task_id=task_id,
         status="OK",
-        outputs=[{"kind": "REPORT", "id": None, "uri": None, "meta": {"sha256": sha256, "preferred_uri": preferred}}],
+        outputs=[
+            {
+                "kind": "REPORT",
+                "id": None,
+                "uri": None,
+                "meta": {"sha256": sha256, "preferred_uri": preferred},
+            }
+        ],
         diagnostics=diagnostics,
         elapsed_ms=int((time.time() - t0) * 1000),
     )
@@ -132,16 +163,24 @@ def exec_sync_manifest_apply(task: dict, ctx: ExecContext) -> dict:
     incoming_path = params.get("incoming_path")
     dry_run = params.get("dry_run", True)
 
-    if not (isinstance(kind, str) and isinstance(base_path, str) and isinstance(incoming_path, str)):
+    if not (
+        isinstance(kind, str)
+        and isinstance(base_path, str)
+        and isinstance(incoming_path, str)
+    ):
         return task_result(
             task_id=task_id,
             status="ERROR",
             outputs=[],
-            diagnostics=[{"code": "E_TASK", "msg": "missing kind/base_path/incoming_path"}],
+            diagnostics=[
+                {"code": "E_TASK", "msg": "missing kind/base_path/incoming_path"}
+            ],
             elapsed_ms=int((time.time() - t0) * 1000),
         )
 
-    plan = plan_patch(kind=kind, base_path=Path(base_path), incoming_path=Path(incoming_path))
+    plan = plan_patch(
+        kind=kind, base_path=Path(base_path), incoming_path=Path(incoming_path)
+    )
     plan["dry_run"] = bool(dry_run)
 
     if not dry_run:
@@ -155,12 +194,21 @@ def exec_sync_manifest_apply(task: dict, ctx: ExecContext) -> dict:
         out_path = Path(base_path).with_suffix(".patch_plan.json")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(
+        json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     return task_result(
         task_id=task_id,
         status="OK",
-        outputs=[{"kind": "FILE", "id": None, "uri": str(out_path), "meta": {"dry_run": bool(dry_run)}}],
+        outputs=[
+            {
+                "kind": "FILE",
+                "id": None,
+                "uri": str(out_path),
+                "meta": {"dry_run": bool(dry_run)},
+            }
+        ],
         diagnostics=[],
         elapsed_ms=int((time.time() - t0) * 1000),
     )

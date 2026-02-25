@@ -20,12 +20,14 @@ def test_golden_run_writes_schema_valid_report(tmp_path: Path):
     out_dir = tmp_path / "out"
     from tools.golden_run import main
 
-    rc = main([
-        "--questions",
-        str(qpath),
-        "--out-dir",
-        str(out_dir),
-    ])
+    rc = main(
+        [
+            "--questions",
+            str(qpath),
+            "--out-dir",
+            str(out_dir),
+        ]
+    )
     # No db => answerer not implemented => summary.failed==0 (SKIP) so rc==0
     assert rc == 0
 

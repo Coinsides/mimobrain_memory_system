@@ -11,7 +11,6 @@ Notes:
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import yaml
@@ -64,7 +63,9 @@ def index_mu_dir(mu_root: Path, db_path: Path, *, reset: bool = False) -> dict:
             time = meta.get("time")
             summary = mu.get("summary")
             content_hash = mu.get("content_hash")
-            idem = mu.get("idempotency") if isinstance(mu.get("idempotency"), dict) else {}
+            idem = (
+                mu.get("idempotency") if isinstance(mu.get("idempotency"), dict) else {}
+            )
             mu_key = idem.get("mu_key")
             privacy_level = privacy.get("level")
             corrects = links.get("corrects")
@@ -88,8 +89,12 @@ def index_mu_dir(mu_root: Path, db_path: Path, *, reset: bool = False) -> dict:
                     content_hash if isinstance(content_hash, str) else None,
                     mu_key if isinstance(mu_key, str) else None,
                     privacy_level if isinstance(privacy_level, str) else None,
-                    json.dumps(corrects, ensure_ascii=False) if corrects is not None else None,
-                    json.dumps(tombstone, ensure_ascii=False) if tombstone is not None else None,
+                    json.dumps(corrects, ensure_ascii=False)
+                    if corrects is not None
+                    else None,
+                    json.dumps(tombstone, ensure_ascii=False)
+                    if tombstone is not None
+                    else None,
                     source.get("kind") if isinstance(source.get("kind"), str) else None,
                     source.get("note") if isinstance(source.get("note"), str) else None,
                     str(path),
@@ -100,7 +105,9 @@ def index_mu_dir(mu_root: Path, db_path: Path, *, reset: bool = False) -> dict:
             tags = parse_tags(mu)
             for t in tags:
                 conn.execute("INSERT OR IGNORE INTO tag(tag) VALUES (?)", (t,))
-                conn.execute("INSERT OR IGNORE INTO mu_tag(mu_id, tag) VALUES (?, ?)", (mu_id, t))
+                conn.execute(
+                    "INSERT OR IGNORE INTO mu_tag(mu_id, tag) VALUES (?, ?)", (mu_id, t)
+                )
 
             count += 1
 

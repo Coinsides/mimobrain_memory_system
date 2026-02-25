@@ -31,14 +31,26 @@ class ExecContext:
     tool_version: str = "0.1"
 
 
-def task_result(*, task_id: str, status: str, outputs: list[dict], diagnostics: list[dict], elapsed_ms: int) -> dict:
+def task_result(
+    *,
+    task_id: str,
+    status: str,
+    outputs: list[dict],
+    diagnostics: list[dict],
+    elapsed_ms: int,
+) -> dict:
     return {
         "task_id": task_id,
         "status": status,
         "outputs": outputs,
         "diagnostics": diagnostics,
         "stats": {"elapsed_ms": elapsed_ms, "tokens_in": 0, "tokens_out": 0},
-        "provenance": {"tool": "mimobrain_memory_system", "tool_version": "0.1", "model": None, "prompt_version": None},
+        "provenance": {
+            "tool": "mimobrain_memory_system",
+            "tool_version": "0.1",
+            "model": None,
+            "prompt_version": None,
+        },
     }
 
 
@@ -73,11 +85,20 @@ def exec_repair_pointer(task: dict, ctx: ExecContext) -> dict:
     suggested_uri = None
     if ctx.raw_manifest_path:
         try:
-            suggested_uri = repair_suggest_by_sha256(Path(ctx.raw_manifest_path), sha256=sha256)
+            suggested_uri = repair_suggest_by_sha256(
+                Path(ctx.raw_manifest_path), sha256=sha256
+            )
         except Exception:
             suggested_uri = None
 
-    outputs: list[dict] = [{"kind": "REPORT", "id": None, "uri": None, "meta": {"mu_id": mu_id, "sha256": sha256, "suggested_uri": suggested_uri}}]
+    outputs: list[dict] = [
+        {
+            "kind": "REPORT",
+            "id": None,
+            "uri": None,
+            "meta": {"mu_id": mu_id, "sha256": sha256, "suggested_uri": suggested_uri},
+        }
+    ]
 
     diags: list[dict[str, Any]] = []
 
@@ -98,12 +119,15 @@ def exec_repair_pointer(task: dict, ctx: ExecContext) -> dict:
         if ctx.out_mu_dir and isinstance(mu_path, str) and mu_path:
             try:
                 import yaml
+
                 # local minimal dump/id helpers (avoid importing private helpers)
                 import hashlib
                 from datetime import datetime, timezone
 
                 def _new_mu_id() -> str:
-                    seed = f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}:{mu_path}".encode("utf-8")
+                    seed = f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}:{mu_path}".encode(
+                        "utf-8"
+                    )
                     rnd = hashlib.sha256(seed).hexdigest()[:10]
                     return f"mu_migr_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{rnd}"
 
@@ -147,8 +171,25 @@ def exec_repair_pointer(task: dict, ctx: ExecContext) -> dict:
                         fixed_mu_path = out_dir / f"{new_id}.mimo"
                         fixed_mu_path.write_text(_dump_mu(mu_obj), encoding="utf-8")
 
-                        outputs.append({"kind": "MU", "id": new_id, "uri": str(fixed_mu_path), "meta": {"supersedes": mu_id, "changed_pointers": changed}})
-                        diags.append({"code": "AUTO_FIXED", "msg": "wrote superseding MU with migrated pointer", "new_mu_id": new_id, "new_mu_path": str(fixed_mu_path)})
+                        outputs.append(
+                            {
+                                "kind": "MU",
+                                "id": new_id,
+                                "uri": str(fixed_mu_path),
+                                "meta": {
+                                    "supersedes": mu_id,
+                                    "changed_pointers": changed,
+                                },
+                            }
+                        )
+                        diags.append(
+                            {
+                                "code": "AUTO_FIXED",
+                                "msg": "wrote superseding MU with migrated pointer",
+                                "new_mu_id": new_id,
+                                "new_mu_path": str(fixed_mu_path),
+                            }
+                        )
             except Exception as e:
                 diags.append({"code": "AUTO_FIX_FAILED", "msg": str(e)})
 

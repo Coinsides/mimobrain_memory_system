@@ -21,7 +21,12 @@ def test_build_bundle_can_compile_template_and_attach_diagnostics(tmp_path: Path
     mu_root = tmp_path / "mu"
     mu_root.mkdir()
 
-    _write_mu(mu_root / "a.mimo", "mu_a", "隐私 策略 private org public allow_snapshot allow_pointer", "2026-02-20T00:00:00Z")
+    _write_mu(
+        mu_root / "a.mimo",
+        "mu_a",
+        "隐私 策略 private org public allow_snapshot allow_pointer",
+        "2026-02-20T00:00:00Z",
+    )
 
     from tools.index_mu import index_mu_dir
 

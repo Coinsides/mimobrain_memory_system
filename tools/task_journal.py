@@ -22,10 +22,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 
 def utc_now() -> str:
@@ -66,7 +65,9 @@ def _json_dumps(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False, sort_keys=True)
 
 
-def append_task(db_path: Path, spec: dict, result: dict, *, context: dict | None = None) -> None:
+def append_task(
+    db_path: Path, spec: dict, result: dict, *, context: dict | None = None
+) -> None:
     init_db(db_path)
 
     task_id = result.get("task_id") or spec.get("task_id") or spec.get("id")
@@ -129,7 +130,8 @@ def load_task(db_path: Path, task_id: str) -> tuple[dict, dict, dict | None]:
     init_db(db_path)
     with connect(db_path) as conn:
         row = conn.execute(
-            "SELECT spec_json, result_json, context_json FROM tasks WHERE task_id=?", (task_id,)
+            "SELECT spec_json, result_json, context_json FROM tasks WHERE task_id=?",
+            (task_id,),
         ).fetchone()
     if not row:
         raise KeyError(task_id)

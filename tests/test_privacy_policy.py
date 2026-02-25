@@ -13,8 +13,14 @@ def test_ensure_privacy_defaults_fills_private():
 def test_export_share_policy_defaults_deny_org_public():
     mu = {"mu_id": "mu_x", "privacy": {"level": "private", "redact": "none"}}
     mu2 = ensure_privacy_defaults(mu)
-    assert export_share_policy(mu2, target_level="public") == {"allow_pointer": False, "allow_snapshot": False}
-    assert export_share_policy(mu2, target_level="org") == {"allow_pointer": False, "allow_snapshot": False}
+    assert export_share_policy(mu2, target_level="public") == {
+        "allow_pointer": False,
+        "allow_snapshot": False,
+    }
+    assert export_share_policy(mu2, target_level="org") == {
+        "allow_pointer": False,
+        "allow_snapshot": False,
+    }
 
 
 def test_export_share_policy_allows_when_explicit_true():
@@ -27,4 +33,7 @@ def test_export_share_policy_allows_when_explicit_true():
         },
     }
     mu2 = ensure_privacy_defaults(mu)
-    assert export_share_policy(mu2, target_level="public") == {"allow_pointer": True, "allow_snapshot": True}
+    assert export_share_policy(mu2, target_level="public") == {
+        "allow_pointer": True,
+        "allow_snapshot": True,
+    }

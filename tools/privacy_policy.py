@@ -78,7 +78,11 @@ def export_share_policy(mu: dict, *, target_level: str) -> dict:
     """
 
     privacy = mu.get("privacy") if isinstance(mu.get("privacy"), dict) else {}
-    sp = privacy.get("share_policy") if isinstance(privacy.get("share_policy"), dict) else {}
+    sp = (
+        privacy.get("share_policy")
+        if isinstance(privacy.get("share_policy"), dict)
+        else {}
+    )
 
     # baseline defaults
     allow_pointer = False

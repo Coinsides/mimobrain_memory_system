@@ -9,7 +9,12 @@ from jsonschema import Draft202012Validator
 
 
 def load_schema() -> dict:
-    schema_path = Path(__file__).resolve().parents[1] / "docs" / "contracts" / "bundle_v0_1.schema.json"
+    schema_path = (
+        Path(__file__).resolve().parents[1]
+        / "docs"
+        / "contracts"
+        / "bundle_v0_1.schema.json"
+    )
     return json.loads(schema_path.read_text(encoding="utf-8"))
 
 

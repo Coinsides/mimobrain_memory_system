@@ -26,7 +26,12 @@ from typing import Any
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def _task_id(prefix: str, *, payload: str) -> str:
@@ -79,7 +84,9 @@ def emit_repair_tasks(
         if not isinstance(mu_id, str) or not mu_id:
             continue
 
-        idem = _idempotency_key("REPAIR_POINTER", mu_id, str(sha256 or ""), str(uri or ""))
+        idem = _idempotency_key(
+            "REPAIR_POINTER", mu_id, str(sha256 or ""), str(uri or "")
+        )
         task_id = _task_id("t_repair_pointer", payload=idem)
 
         spec: dict[str, Any] = {
@@ -102,7 +109,9 @@ def emit_repair_tasks(
         }
 
         out_path = out_dir_p / f"{task_id}.task_spec.json"
-        out_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        out_path.write_text(
+            json.dumps(spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         wrote += 1
 
     return EmitSummary(wrote=wrote, out_dir=out_dir_p)
@@ -113,7 +122,9 @@ def main(argv: list[str] | None = None) -> int:
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--bundle", required=True, help="Bundle JSON path")
-    ap.add_argument("--out-dir", required=True, help="Output directory for TaskSpec JSON files")
+    ap.add_argument(
+        "--out-dir", required=True, help="Output directory for TaskSpec JSON files"
+    )
     ns = ap.parse_args(argv)
 
     s = emit_repair_tasks(ns.bundle, out_dir=ns.out_dir)

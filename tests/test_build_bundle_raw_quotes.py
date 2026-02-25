@@ -75,4 +75,7 @@ pointer:
 
     assert bundle["evidence"][0]["mu_id"] == "mu_1"
     assert bundle["evidence"][0]["snippet"] == "b\nc"
-    assert bundle.get("diagnostics") is None or bundle["diagnostics"].get("evidence_degraded") is None
+    assert (
+        bundle.get("diagnostics") is None
+        or bundle["diagnostics"].get("evidence_degraded") is None
+    )

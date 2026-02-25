@@ -40,6 +40,11 @@ pointer:
     assert obj["content_hash"].startswith("sha256:")
     assert obj["source_raw_ids"] == ["sha256:" + "c" * 64]
 
-    schema_path = Path(__file__).resolve().parents[1] / "docs" / "contracts" / "mu_manifest_line_v0_1.schema.json"
+    schema_path = (
+        Path(__file__).resolve().parents[1]
+        / "docs"
+        / "contracts"
+        / "mu_manifest_line_v0_1.schema.json"
+    )
     errors = doctor_manifest(res.manifest_path, schema_path)
     assert errors == []

@@ -64,7 +64,9 @@ def write_json(path: Path, obj: dict) -> str:
 
 def write_jsonl(path: Path, objs: list[dict]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = "".join(json.dumps(o, ensure_ascii=False) + "\n" for o in objs).encode("utf-8")
+    data = "".join(json.dumps(o, ensure_ascii=False) + "\n" for o in objs).encode(
+        "utf-8"
+    )
     path.write_bytes(data)
     return sha256_bytes(data)
 
@@ -143,7 +145,13 @@ def main(argv: list[str] | None = None) -> int:
         from tools.logger import default_log_path, log_event
 
         run_log = default_log_path("pipeline")
-        log_event(event="RUN_START", log_path=run_log, run_id=run_id, run_dir=str(run_dir), tool="run_manifest_pipeline")
+        log_event(
+            event="RUN_START",
+            log_path=run_log,
+            run_id=run_id,
+            run_dir=str(run_dir),
+            tool="run_manifest_pipeline",
+        )
     except Exception:
         log_event = None  # type: ignore
         run_log = None  # type: ignore
@@ -169,7 +177,13 @@ def main(argv: list[str] | None = None) -> int:
                     run_id=run_id,
                     run_dir=str(run_dir),
                     task_id=r.get("task_id"),
-                    inputs=[{"kind": "TASK", "type": t.get("type"), "idempotency_key": t.get("idempotency_key")}],
+                    inputs=[
+                        {
+                            "kind": "TASK",
+                            "type": t.get("type"),
+                            "idempotency_key": t.get("idempotency_key"),
+                        }
+                    ],
                     outputs=r.get("outputs"),
                     stats={"elapsed_ms": r.get("elapsed_ms")},
                     diagnostics={"status": r.get("status")},
@@ -187,7 +201,10 @@ def main(argv: list[str] | None = None) -> int:
         import subprocess
 
         git_head = (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(Path(__file__).resolve().parents[1]))
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(Path(__file__).resolve().parents[1]),
+            )
             .decode("utf-8")
             .strip()
         )
@@ -206,8 +223,12 @@ def main(argv: list[str] | None = None) -> int:
         "inputs": {
             "base_path": ns.base,
             "incoming_path": ns.incoming,
-            "base_sha256": sha256_file(Path(ns.base)) if Path(ns.base).exists() else None,
-            "incoming_sha256": sha256_file(Path(ns.incoming)) if Path(ns.incoming).exists() else None,
+            "base_sha256": sha256_file(Path(ns.base))
+            if Path(ns.base).exists()
+            else None,
+            "incoming_sha256": sha256_file(Path(ns.incoming))
+            if Path(ns.incoming).exists()
+            else None,
             "vault_roots": vault_roots,
         },
         "outputs": {

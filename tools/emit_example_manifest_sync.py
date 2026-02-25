@@ -14,6 +14,8 @@ Paths inside reports are normalized to placeholders.
 
 from __future__ import annotations
 
+# ruff: noqa: E402  # This file intentionally edits sys.path for script execution.
+
 import json
 import sys
 from pathlib import Path

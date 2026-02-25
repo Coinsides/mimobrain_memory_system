@@ -44,7 +44,12 @@ def test_ms_export_mu(tmp_path: Path):
 
 
 def test_ms_export_bundle(tmp_path: Path):
-    bundle = {"bundle_id": "b1", "evidence": [{"mu_id": "mu_a", "privacy": {"level": "public", "redact": "none"}}]}
+    bundle = {
+        "bundle_id": "b1",
+        "evidence": [
+            {"mu_id": "mu_a", "privacy": {"level": "public", "redact": "none"}}
+        ],
+    }
     inp = tmp_path / "bundle.json"
     inp.write_text(json.dumps(bundle), encoding="utf-8")
 

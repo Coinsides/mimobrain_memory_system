@@ -113,13 +113,24 @@ def migrate_mu_pointers(
             continue
         uri = p.get("uri")
         sha = p.get("sha256")
-        if isinstance(uri, str) and isinstance(sha, str) and uri and not uri.startswith("vault://"):
+        if (
+            isinstance(uri, str)
+            and isinstance(sha, str)
+            and uri
+            and not uri.startswith("vault://")
+        ):
             new_uri = idx.get(sha)
-            if isinstance(new_uri, str) and new_uri.startswith("vault://") and new_uri != uri:
+            if (
+                isinstance(new_uri, str)
+                and new_uri.startswith("vault://")
+                and new_uri != uri
+            ):
                 p2 = dict(p)
                 p2["uri"] = new_uri
                 new_pointers.append(p2)
-                changed.append(PointerMigration(old_uri=uri, new_uri=new_uri, sha256=sha))
+                changed.append(
+                    PointerMigration(old_uri=uri, new_uri=new_uri, sha256=sha)
+                )
                 continue
         new_pointers.append(p)
 
@@ -171,9 +182,13 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mu", required=True, help="MU file or directory containing *.mimo")
+    ap.add_argument(
+        "--mu", required=True, help="MU file or directory containing *.mimo"
+    )
     ap.add_argument("--raw-manifest", required=True, help="raw_manifest.jsonl path")
-    ap.add_argument("--out-dir", required=True, help="Output directory for migrated MU files")
+    ap.add_argument(
+        "--out-dir", required=True, help="Output directory for migrated MU files"
+    )
     ap.add_argument("--report", default=None, help="Optional json report output")
     ns = ap.parse_args(argv)
 
@@ -191,7 +206,9 @@ def main(argv: list[str] | None = None) -> int:
 
     for mu_path in iter_mu_files(mu_in):
         touched += 1
-        res = migrate_mu_pointers(mu_path, raw_manifest_path=raw_manifest, out_dir=ns.out_dir)
+        res = migrate_mu_pointers(
+            mu_path, raw_manifest_path=raw_manifest, out_dir=ns.out_dir
+        )
         if res is None:
             continue
         migrated += 1
@@ -210,7 +227,9 @@ def main(argv: list[str] | None = None) -> int:
 
     report = {"touched": touched, "migrated": migrated, "results": results}
     if ns.report:
-        Path(ns.report).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        Path(ns.report).write_text(
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     print(json.dumps({"touched": touched, "migrated": migrated}, ensure_ascii=False))
     return 0

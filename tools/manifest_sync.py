@@ -123,7 +123,9 @@ def index_by(records: Iterable[dict], key: str) -> dict[str, list[dict]]:
     return idx
 
 
-def analyze_sync(*, kind: str, base_path: str | Path, incoming_path: str | Path) -> dict[str, Any]:
+def analyze_sync(
+    *, kind: str, base_path: str | Path, incoming_path: str | Path
+) -> dict[str, Any]:
     if kind not in KIND_ID_KEY:
         raise ValueError(f"unknown kind={kind!r} (expected raw|mu|asset)")
 
@@ -241,7 +243,9 @@ def main(argv: list[str] | None = None) -> int:
     report = analyze_sync(kind=ns.kind, base_path=ns.base, incoming_path=ns.incoming)
     out_p = Path(ns.out)
     out_p.parent.mkdir(parents=True, exist_ok=True)
-    out_p.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_p.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return 0
 
 

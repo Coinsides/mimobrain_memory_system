@@ -61,7 +61,11 @@ def plan_patch(*, kind: str, base_path: Path, incoming_path: Path) -> dict[str, 
 
     # Block on conflicts from the analyzer
     report = analyze_sync(kind=kind, base_path=base_path, incoming_path=incoming_path)
-    blocked = [c for c in report.get("conflicts", []) if isinstance(c, dict) and c.get("severity") == "ERROR"]
+    blocked = [
+        c
+        for c in report.get("conflicts", [])
+        if isinstance(c, dict) and c.get("severity") == "ERROR"
+    ]
 
     for c in blocked:
         actions.append(
@@ -83,8 +87,22 @@ def plan_patch(*, kind: str, base_path: Path, incoming_path: Path) -> dict[str, 
         inc_recs = c.get("incoming_records") or []
         if not (isinstance(sha, str) and base_recs and inc_recs):
             continue
-        b_uri = next((r.get("uri") for r in base_recs if isinstance(r, dict) and isinstance(r.get("uri"), str)), None)
-        i_uri = next((r.get("uri") for r in inc_recs if isinstance(r, dict) and isinstance(r.get("uri"), str)), None)
+        b_uri = next(
+            (
+                r.get("uri")
+                for r in base_recs
+                if isinstance(r, dict) and isinstance(r.get("uri"), str)
+            ),
+            None,
+        )
+        i_uri = next(
+            (
+                r.get("uri")
+                for r in inc_recs
+                if isinstance(r, dict) and isinstance(r.get("uri"), str)
+            ),
+            None,
+        )
         if b_uri and i_uri and b_uri != i_uri:
             actions.append(
                 Action(
@@ -122,7 +140,9 @@ def plan_patch(*, kind: str, base_path: Path, incoming_path: Path) -> dict[str, 
             )
             continue
 
-        actions.append(Action(type="APPEND_RECORD", message=f"append new {id_key}={rid}", record=r))
+        actions.append(
+            Action(type="APPEND_RECORD", message=f"append new {id_key}={rid}", record=r)
+        )
         append_count += 1
 
     plan = {
@@ -162,15 +182,23 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--base", required=True)
     p.add_argument("--incoming", required=True)
     p.add_argument("--out", required=True)
-    p.add_argument("--apply", action="store_true", help="Actually append safe new records to base manifest")
+    p.add_argument(
+        "--apply",
+        action="store_true",
+        help="Actually append safe new records to base manifest",
+    )
     ns = p.parse_args(argv)
 
-    plan = plan_patch(kind=ns.kind, base_path=Path(ns.base), incoming_path=Path(ns.incoming))
+    plan = plan_patch(
+        kind=ns.kind, base_path=Path(ns.base), incoming_path=Path(ns.incoming)
+    )
     plan["dry_run"] = not bool(ns.apply)
 
     out_p = Path(ns.out)
     out_p.parent.mkdir(parents=True, exist_ok=True)
-    out_p.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_p.write_text(
+        json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     if ns.apply:
         apply_plan(plan)

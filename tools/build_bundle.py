@@ -64,7 +64,9 @@ def build_bundle(
         tmpl = load_and_validate_template(str(template_name))
         compiled = merge_spec(
             template_name=str(template_name),
-            template_defaults=tmpl.get("defaults") if isinstance(tmpl.get("defaults"), dict) else {},
+            template_defaults=tmpl.get("defaults")
+            if isinstance(tmpl.get("defaults"), dict)
+            else {},
             question_setup=question_setup,
             question_expect=question_expect,
             question_budget=question_budget,
@@ -73,7 +75,9 @@ def build_bundle(
 
         template = final_spec.template
         days = int(final_spec.scope_days)
-        evidence_depth = str(final_spec.granularity.get("evidence_depth") or evidence_depth)
+        evidence_depth = str(
+            final_spec.granularity.get("evidence_depth") or evidence_depth
+        )
         limit = int(final_spec.budget.get("max_mu") or limit)
 
         if include_diagnostics:
@@ -178,7 +182,9 @@ def build_bundle(
                         "mu_path": r.path,
                         "sha256": last_fail_ptr.get("sha256"),
                         "uri": last_fail_ptr.get("uri"),
-                        "reason": (last_fail_diag or {}).get("error") if isinstance(last_fail_diag, dict) else None,
+                        "reason": (last_fail_diag or {}).get("error")
+                        if isinstance(last_fail_diag, dict)
+                        else None,
                         "hint": {
                             "need_vault_roots": (not bool(br)),
                             "need_raw_manifest": (rm is None),
@@ -222,7 +228,9 @@ def build_bundle(
             bundle["diagnostics"].setdefault("raw_manifest", str(raw_manifest_path))
         if evidence_degraded_mu_ids:
             bundle["diagnostics"]["evidence_degraded"] = True
-            bundle["diagnostics"]["evidence_degraded_mu_ids"] = sorted(set(evidence_degraded_mu_ids))
+            bundle["diagnostics"]["evidence_degraded_mu_ids"] = sorted(
+                set(evidence_degraded_mu_ids)
+            )
         if repair_tasks:
             bundle["diagnostics"]["repair_tasks"] = repair_tasks
 
@@ -249,11 +257,26 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--query", required=True)
     p.add_argument("--days", type=int, default=7)
     p.add_argument("--template", default="time_overview_v1")
-    p.add_argument("--target-level", default="private", choices=["private", "org", "public"])
-    p.add_argument("--evidence-depth", default="mu_ids", choices=["mu_ids", "mu_snippets", "raw_quotes"], help="Evidence detail level")
+    p.add_argument(
+        "--target-level", default="private", choices=["private", "org", "public"]
+    )
+    p.add_argument(
+        "--evidence-depth",
+        default="mu_ids",
+        choices=["mu_ids", "mu_snippets", "raw_quotes"],
+        help="Evidence detail level",
+    )
     p.add_argument("--limit", type=int, default=50)
-    p.add_argument("--vault-root", default=None, help="Optional physical vault root for pointer resolve (default vault_id only)")
-    p.add_argument("--raw-manifest", default=None, help="Optional raw_manifest.jsonl path for legacy pointer resolve")
+    p.add_argument(
+        "--vault-root",
+        default=None,
+        help="Optional physical vault root for pointer resolve (default vault_id only)",
+    )
+    p.add_argument(
+        "--raw-manifest",
+        default=None,
+        help="Optional raw_manifest.jsonl path for legacy pointer resolve",
+    )
     p.add_argument("--out", required=True)
     ns = p.parse_args(argv)
 
@@ -287,7 +310,9 @@ def main(argv: list[str] | None = None) -> int:
 
     out_path = Path(ns.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(
+        json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(str(out_path))
     return 0
 

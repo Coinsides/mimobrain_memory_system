@@ -25,9 +25,9 @@ def test_manifest_schema_validation_if_jsonschema_available(repo_root: Path):
     jsonschema = pytest.importorskip("jsonschema")
 
     schema = json.loads(
-        (repo_root / "docs" / "contracts" / "raw_manifest_line_v0_1.schema.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            repo_root / "docs" / "contracts" / "raw_manifest_line_v0_1.schema.json"
+        ).read_text(encoding="utf-8")
     )
     jsonschema.Draft202012Validator(schema).validate(
         {

@@ -33,7 +33,14 @@ class CompiledSpec:
     budget: dict
 
 
-def merge_spec(*, template_name: str, template_defaults: dict, question_setup: dict | None, question_expect: dict | None, question_budget: dict | None) -> CompiledSpec:
+def merge_spec(
+    *,
+    template_name: str,
+    template_defaults: dict,
+    question_setup: dict | None,
+    question_expect: dict | None,
+    question_budget: dict | None,
+) -> CompiledSpec:
     defaults = template_defaults or {}
     setup = question_setup or {}
     expect = question_expect or {}
@@ -49,13 +56,29 @@ def merge_spec(*, template_name: str, template_defaults: dict, question_setup: d
         scope_days = int(twd)
 
     # Granularity: template defaults, then evidence expectations override.
-    g = defaults.get("granularity") if isinstance(defaults.get("granularity"), dict) else {}
-    detail_level = g.get("detail_level") if isinstance(g.get("detail_level"), str) else "normal"
-    time_resolution = g.get("time_resolution") if isinstance(g.get("time_resolution"), str) else "day"
-    evidence_depth = g.get("evidence_depth") if isinstance(g.get("evidence_depth"), str) else "mu_ids"
+    g = (
+        defaults.get("granularity")
+        if isinstance(defaults.get("granularity"), dict)
+        else {}
+    )
+    detail_level = (
+        g.get("detail_level") if isinstance(g.get("detail_level"), str) else "normal"
+    )
+    time_resolution = (
+        g.get("time_resolution") if isinstance(g.get("time_resolution"), str) else "day"
+    )
+    evidence_depth = (
+        g.get("evidence_depth")
+        if isinstance(g.get("evidence_depth"), str)
+        else "mu_ids"
+    )
 
     ev = expect.get("evidence") if isinstance(expect.get("evidence"), dict) else {}
-    if isinstance(ev.get("depth"), str) and ev.get("depth") in {"mu_ids", "mu_snippets", "raw_quotes"}:
+    if isinstance(ev.get("depth"), str) and ev.get("depth") in {
+        "mu_ids",
+        "mu_snippets",
+        "raw_quotes",
+    }:
         evidence_depth = ev.get("depth")
 
     # Budget: template defaults, then question budget can tighten.
@@ -77,7 +100,9 @@ def merge_spec(*, template_name: str, template_defaults: dict, question_setup: d
     }
     budget = {"max_mu": max_mu, "max_tokens": max_tokens}
 
-    return CompiledSpec(template=template_name, scope_days=scope_days, granularity=gran, budget=budget)
+    return CompiledSpec(
+        template=template_name, scope_days=scope_days, granularity=gran, budget=budget
+    )
 
 
 def estimate_tokens(spec: CompiledSpec) -> int:
@@ -103,7 +128,9 @@ def estimate_tokens(spec: CompiledSpec) -> int:
     per_mu = 18 if evidence == "mu_ids" else 55
 
     # more detail/time means more sections/verbosity
-    detail_boost = {"overview": 0, "normal": 120, "detailed": 260, "forensic": 420}.get(detail, 120)
+    detail_boost = {"overview": 0, "normal": 120, "detailed": 260, "forensic": 420}.get(
+        detail, 120
+    )
     time_boost = {"week": 0, "day": 80, "session": 160, "event": 260}.get(time_res, 80)
 
     scope_boost = int(min(600, max(0, spec.scope_days - 7) * 18))
@@ -158,7 +185,9 @@ def _shrink_max_mu(n: int) -> int:
     return max(1, int((n + 1) // 2))
 
 
-def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[CompiledSpec, dict]:
+def plan_downgrades(
+    spec: CompiledSpec, *, mode: str = "answer"
+) -> tuple[CompiledSpec, dict]:
     """Plan deterministic downgrades and return (final_spec, diagnostics).
 
     mode:
@@ -173,7 +202,9 @@ def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[Compil
       - downgrade_steps[]
     """
 
-    max_tokens = spec.budget.get("max_tokens") if isinstance(spec.budget, dict) else None
+    max_tokens = (
+        spec.budget.get("max_tokens") if isinstance(spec.budget, dict) else None
+    )
     max_tokens = int(max_tokens) if isinstance(max_tokens, int) else None
 
     before = estimate_tokens(spec)
@@ -190,8 +221,19 @@ def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[Compil
         steps: list[dict] = []
         ng = _downgrade_evidence(g)
         if ng is not g:
-            steps.append({"kind": "evidence_depth", "from": g.get("evidence_depth"), "to": ng.get("evidence_depth")})
-            spec = CompiledSpec(template=spec.template, scope_days=spec.scope_days, granularity=ng, budget=spec.budget)
+            steps.append(
+                {
+                    "kind": "evidence_depth",
+                    "from": g.get("evidence_depth"),
+                    "to": ng.get("evidence_depth"),
+                }
+            )
+            spec = CompiledSpec(
+                template=spec.template,
+                scope_days=spec.scope_days,
+                granularity=ng,
+                budget=spec.budget,
+            )
 
         # clamp max_mu to >=1
         cur_max_mu = b.get("max_mu")
@@ -200,7 +242,12 @@ def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[Compil
             nb = dict(b)
             nb["max_mu"] = 1
             steps.append({"kind": "max_mu", "from": cur_max_mu, "to": 1})
-            spec = CompiledSpec(template=spec.template, scope_days=spec.scope_days, granularity=spec.granularity, budget=nb)
+            spec = CompiledSpec(
+                template=spec.template,
+                scope_days=spec.scope_days,
+                granularity=spec.granularity,
+                budget=nb,
+            )
 
         after = estimate_tokens(spec)
         return spec, {
@@ -234,29 +281,67 @@ def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[Compil
         # 1) evidence
         ng = _downgrade_evidence(g)
         if ng is not g:
-            steps.append({"kind": "evidence_depth", "from": g.get("evidence_depth"), "to": ng.get("evidence_depth")})
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            steps.append(
+                {
+                    "kind": "evidence_depth",
+                    "from": g.get("evidence_depth"),
+                    "to": ng.get("evidence_depth"),
+                }
+            )
+            cur = CompiledSpec(
+                template=cur.template,
+                scope_days=cur.scope_days,
+                granularity=ng,
+                budget=cur.budget,
+            )
             continue
 
         # 2) detail
         ng = _downgrade_detail(g)
         if ng is not g:
-            steps.append({"kind": "detail_level", "from": g.get("detail_level"), "to": ng.get("detail_level")})
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            steps.append(
+                {
+                    "kind": "detail_level",
+                    "from": g.get("detail_level"),
+                    "to": ng.get("detail_level"),
+                }
+            )
+            cur = CompiledSpec(
+                template=cur.template,
+                scope_days=cur.scope_days,
+                granularity=ng,
+                budget=cur.budget,
+            )
             continue
 
         # 3) time
         ng = _downgrade_time(g)
         if ng is not g:
-            steps.append({"kind": "time_resolution", "from": g.get("time_resolution"), "to": ng.get("time_resolution")})
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=ng, budget=cur.budget)
+            steps.append(
+                {
+                    "kind": "time_resolution",
+                    "from": g.get("time_resolution"),
+                    "to": ng.get("time_resolution"),
+                }
+            )
+            cur = CompiledSpec(
+                template=cur.template,
+                scope_days=cur.scope_days,
+                granularity=ng,
+                budget=cur.budget,
+            )
             continue
 
         # 4) shrink scope
         ndays = _shrink_scope_days(int(cur.scope_days))
         if ndays != cur.scope_days:
             steps.append({"kind": "scope_days", "from": cur.scope_days, "to": ndays})
-            cur = CompiledSpec(template=cur.template, scope_days=ndays, granularity=cur.granularity, budget=cur.budget)
+            cur = CompiledSpec(
+                template=cur.template,
+                scope_days=ndays,
+                granularity=cur.granularity,
+                budget=cur.budget,
+            )
             continue
 
         # 5) shrink max_mu (absolute last resort)
@@ -268,7 +353,12 @@ def plan_downgrades(spec: CompiledSpec, *, mode: str = "answer") -> tuple[Compil
             steps.append({"kind": "max_mu", "from": cur_max_mu, "to": nmu})
             nb = dict(b)
             nb["max_mu"] = nmu
-            cur = CompiledSpec(template=cur.template, scope_days=cur.scope_days, granularity=cur.granularity, budget=nb)
+            cur = CompiledSpec(
+                template=cur.template,
+                scope_days=cur.scope_days,
+                granularity=cur.granularity,
+                budget=nb,
+            )
             continue
 
         break

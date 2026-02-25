@@ -41,7 +41,12 @@ def test_emit_repair_tasks_writes_valid_taskspec(tmp_path: Path):
     spec = json.loads(files[0].read_text(encoding="utf-8"))
 
     # validate against schema
-    schema_path = Path(__file__).resolve().parents[1] / "docs" / "contracts" / "task_spec_v0_1.schema.json"
+    schema_path = (
+        Path(__file__).resolve().parents[1]
+        / "docs"
+        / "contracts"
+        / "task_spec_v0_1.schema.json"
+    )
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
 
     import jsonschema

@@ -14,11 +14,17 @@ def test_index_mu_builds_db(tmp_path: Path):
         "summary": "hello world",
         "content_hash": "sha256:" + "0" * 64,
         "idempotency": {"mu_key": "sha256:" + "1" * 64},
-        "meta": {"time": "2026-01-01T00:00:00Z", "source": {"kind": "chat", "note": "x"}, "tags": ["a", "b"]},
+        "meta": {
+            "time": "2026-01-01T00:00:00Z",
+            "source": {"kind": "chat", "note": "x"},
+            "tags": ["a", "b"],
+        },
         "links": {"corrects": []},
         "privacy": {"level": "private", "redact": "none"},
     }
-    (mu_root / "a.mimo").write_text(yaml.safe_dump(mu1, allow_unicode=True), encoding="utf-8")
+    (mu_root / "a.mimo").write_text(
+        yaml.safe_dump(mu1, allow_unicode=True), encoding="utf-8"
+    )
 
     from tools.index_mu import index_mu_dir
 

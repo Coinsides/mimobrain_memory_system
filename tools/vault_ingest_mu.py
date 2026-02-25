@@ -33,7 +33,12 @@ from tools.manifest_io import append_jsonl
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def _dest_relpath_for_mu(*, mu_id: str) -> Path:
@@ -127,14 +132,18 @@ def ingest_mu_file(
     }
     append_jsonl(manifest_path_p, rec)
 
-    return IngestMuResult(mu_id=mu_id, uri=uri, dest_path=dest_path, manifest_path=manifest_path_p)
+    return IngestMuResult(
+        mu_id=mu_id, uri=uri, dest_path=dest_path, manifest_path=manifest_path_p
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--in", dest="inp", required=True, help="Input .mimo file or directory")
+    ap.add_argument(
+        "--in", dest="inp", required=True, help="Input .mimo file or directory"
+    )
     ap.add_argument("--vault-root", required=True)
     ap.add_argument("--vault-id", default="default")
     ap.add_argument("--manifest", default=None)
@@ -155,7 +164,13 @@ def main(argv: list[str] | None = None) -> int:
 
     count = 0
     for f in iter_files(inp):
-        ingest_mu_file(f, vault_root=ns.vault_root, vault_id=ns.vault_id, copy_mode=ns.copy_mode, manifest_path=ns.manifest)
+        ingest_mu_file(
+            f,
+            vault_root=ns.vault_root,
+            vault_id=ns.vault_id,
+            copy_mode=ns.copy_mode,
+            manifest_path=ns.manifest,
+        )
         count += 1
 
     print(f"ingested_mu_files={count}")

@@ -120,7 +120,9 @@ def invalidate_by_mu_ids(db_path: Path, changed_mu_ids: list[str]) -> int:
 
     to_stale: list[str] = []
     with connect(db_path) as conn:
-        rows = conn.execute("SELECT view_id, source_mu_ids_json FROM view_cache WHERE stale=0").fetchall()
+        rows = conn.execute(
+            "SELECT view_id, source_mu_ids_json FROM view_cache WHERE stale=0"
+        ).fetchall()
         for r in rows:
             view_id = r[0]
             deps = set(json.loads(r[1]))

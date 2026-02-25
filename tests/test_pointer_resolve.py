@@ -26,7 +26,6 @@ def test_pointer_resolve_vault_uri_line_range(tmp_path: Path):
 
 
 def test_pointer_resolve_legacy_uri_via_manifest(tmp_path: Path):
-    import json
 
     from tools.manifest_io import append_jsonl
     from tools.vault_ops import sha256_file
@@ -59,7 +58,9 @@ def test_pointer_resolve_legacy_uri_via_manifest(tmp_path: Path):
         "locator": {"kind": "line_range", "start": 1, "end": 1},
     }
 
-    out = resolve_pointer(pointer, vault_roots={"default": str(vault_root)}, raw_manifest_path=manifest)
+    out = resolve_pointer(
+        pointer, vault_roots={"default": str(vault_root)}, raw_manifest_path=manifest
+    )
     assert out.ok is True
     assert out.uri == "vault://default/raw/2026/02/b.txt"
     assert out.snippet == "hello"

@@ -25,7 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--in", dest="inp", required=True, help="Input file/dir")
     p.add_argument("--out", required=True, help="Output path")
-    p.add_argument("--target-level", required=True, choices=["private", "org", "public"])
+    p.add_argument(
+        "--target-level", required=True, choices=["private", "org", "public"]
+    )
     p.add_argument(
         "--kind",
         choices=["auto", "mu", "bundle"],
@@ -63,7 +65,12 @@ def main(argv: list[str] | None = None) -> int:
         from datetime import datetime, timezone
 
         base = f"{kind}:{in_path}:{ns.out}:{ns.target_level}".encode("utf-8")
-        task_id = "export_" + hashlib.sha256(base).hexdigest()[:16] + "_" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        task_id = (
+            "export_"
+            + hashlib.sha256(base).hexdigest()[:16]
+            + "_"
+            + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        )
         spec = {
             "task_id": task_id,
             "type": "MS_EXPORT",
@@ -102,14 +109,18 @@ def main(argv: list[str] | None = None) -> int:
     if kind == "mu":
         from tools.export_mu import main as export_mu_main
 
-        rc = export_mu_main(["--in", str(in_path), "--out", ns.out, "--target-level", ns.target_level])
+        rc = export_mu_main(
+            ["--in", str(in_path), "--out", ns.out, "--target-level", ns.target_level]
+        )
         _journal("OK" if rc == 0 else "ERROR", {"export_kind": "mu"})
         return rc
 
     if kind == "bundle":
         from tools.export_bundle import main as export_bundle_main
 
-        rc = export_bundle_main(["--in", str(in_path), "--out", ns.out, "--target-level", ns.target_level])
+        rc = export_bundle_main(
+            ["--in", str(in_path), "--out", ns.out, "--target-level", ns.target_level]
+        )
         _journal("OK" if rc == 0 else "ERROR", {"export_kind": "bundle"})
         return rc
 

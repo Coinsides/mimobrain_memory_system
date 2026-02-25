@@ -48,7 +48,7 @@ def run_git(args: list[str]) -> str:
 
 def changed_files(base: str, head: str) -> list[str]:
     out = run_git(["diff", "--name-only", f"{base}..{head}"])
-    return [l.strip() for l in out.splitlines() if l.strip()]
+    return [line.strip() for line in out.splitlines() if line.strip()]
 
 
 def main() -> int:
@@ -68,13 +68,14 @@ def main() -> int:
         print("OK: no changes detected")
         return 0
 
-    changed = set(files)
     triggered = any(f in TRIGGERS for f in files)
     if not triggered:
         print("OK: no example gate triggers")
         return 0
 
-    has_example_change = any(any(f.startswith(pfx) for pfx in EXAMPLE_PREFIXES) for f in files)
+    has_example_change = any(
+        any(f.startswith(pfx) for pfx in EXAMPLE_PREFIXES) for f in files
+    )
     if has_example_change:
         print("OK: examples updated")
         return 0

@@ -61,5 +61,7 @@ def test_verify_reports_missing_file(tmp_path: Path):
 
     from tools.vault_doctor import verify_manifest
 
-    errs = verify_manifest(mani, vault_roots={"default": str(tmp_path / 'vaults' / 'default')})
+    errs = verify_manifest(
+        mani, vault_roots={"default": str(tmp_path / "vaults" / "default")}
+    )
     assert errs

@@ -155,7 +155,9 @@ def resolve_pointer(
         kind = locator.get("kind")
         if kind == "line_range":
             try:
-                snippet = _read_line_range(p, start=int(locator.get("start")), end=int(locator.get("end")))
+                snippet = _read_line_range(
+                    p, start=int(locator.get("start")), end=int(locator.get("end"))
+                )
             except Exception as e:
                 diag["warning"] = f"snippet extraction failed: {e}"
         else:
@@ -183,7 +185,11 @@ def main(argv: list[str] | None = None) -> int:
     ns = ap.parse_args(argv)
 
     pointer = json.loads(ns.pointer_json)
-    out = resolve_pointer(pointer, vault_roots={ns.vault_id: ns.vault_root}, raw_manifest_path=ns.raw_manifest)
+    out = resolve_pointer(
+        pointer,
+        vault_roots={ns.vault_id: ns.vault_root},
+        raw_manifest_path=ns.raw_manifest,
+    )
     print(json.dumps(out.__dict__, ensure_ascii=False, indent=2))
     return 0 if out.ok else 2
 

@@ -64,7 +64,11 @@ def _redact_evidence_item(item: dict, *, target_level: str) -> dict:
                 if not isinstance(p, dict):
                     continue
                 uri = p.get("uri")
-                if target_level in {"org", "public"} and isinstance(uri, str) and LOCAL_PATH_RE.search(uri):
+                if (
+                    target_level in {"org", "public"}
+                    and isinstance(uri, str)
+                    and LOCAL_PATH_RE.search(uri)
+                ):
                     continue
                 cleaned.append(p)
             out["pointer"] = cleaned
@@ -82,7 +86,11 @@ def _redact_evidence_item(item: dict, *, target_level: str) -> dict:
                 snap["payload"] = {}
             snap["export_note"] = "snapshot payload removed by share_policy"
 
-    out["export"] = {"target_level": target_level, "allow_pointer": allow_pointer, "allow_snapshot": allow_snapshot}
+    out["export"] = {
+        "target_level": target_level,
+        "allow_pointer": allow_pointer,
+        "allow_snapshot": allow_snapshot,
+    }
     return out
 
 
@@ -103,12 +111,20 @@ def export_bundle(bundle: dict, *, target_level: str) -> dict:
     # Evidence
     ev = b.get("evidence")
     if isinstance(ev, list):
-        b["evidence"] = [_redact_evidence_item(x, target_level=target_level) for x in ev if isinstance(x, dict)]
+        b["evidence"] = [
+            _redact_evidence_item(x, target_level=target_level)
+            for x in ev
+            if isinstance(x, dict)
+        ]
 
     # Strip any accidental local paths in top-level fields
     for key in ["source_path", "path", "uri"]:
         v = b.get(key)
-        if isinstance(v, str) and target_level in {"org", "public"} and LOCAL_PATH_RE.search(v):
+        if (
+            isinstance(v, str)
+            and target_level in {"org", "public"}
+            and LOCAL_PATH_RE.search(v)
+        ):
             b[key] = "<REDACTED_PATH>"
 
     b["export"] = {"target_level": target_level, "applied": True}
@@ -121,7 +137,9 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--in", dest="inp", required=True)
     p.add_argument("--out", required=True)
-    p.add_argument("--target-level", required=True, choices=["private", "org", "public"])
+    p.add_argument(
+        "--target-level", required=True, choices=["private", "org", "public"]
+    )
     ns = p.parse_args(argv)
 
     in_path = Path(ns.inp)
@@ -130,7 +148,9 @@ def main(argv: list[str] | None = None) -> int:
 
     bundle = json.loads(in_path.read_text(encoding="utf-8"))
     out = export_bundle(bundle, target_level=ns.target_level)
-    out_path.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(
+        json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     print(str(out_path))
     return 0

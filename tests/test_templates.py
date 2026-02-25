@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 
 def test_templates_validate_all_repo_templates():
@@ -20,7 +19,11 @@ def test_granularity_merge_overrides_scope_and_evidence():
 
     template_defaults = {
         "scope_days": 7,
-        "granularity": {"detail_level": "normal", "time_resolution": "day", "evidence_depth": "mu_ids"},
+        "granularity": {
+            "detail_level": "normal",
+            "time_resolution": "day",
+            "evidence_depth": "mu_ids",
+        },
         "budget": {"max_mu": 50, "max_tokens": 900},
     }
 

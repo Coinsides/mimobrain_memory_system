@@ -48,18 +48,21 @@ def test_pipeline_smoke(tmp_path: Path):
 
     from tools.run_manifest_pipeline import main
 
-    assert main(
-        [
-            "--kind",
-            "raw",
-            "--base",
-            str(base),
-            "--incoming",
-            str(inc),
-            "--runs-root",
-            str(runs_root),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "--kind",
+                "raw",
+                "--base",
+                str(base),
+                "--incoming",
+                str(inc),
+                "--runs-root",
+                str(runs_root),
+            ]
+        )
+        == 0
+    )
 
     # should have created a RUN-* directory
     run_dirs = [p for p in runs_root.iterdir() if p.is_dir()]

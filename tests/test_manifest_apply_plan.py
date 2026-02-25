@@ -1,8 +1,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 
 def write_jsonl(p: Path, objs: list[dict]):
     p.write_text("\n".join(json.dumps(o) for o in objs) + "\n", encoding="utf-8")
@@ -64,5 +62,7 @@ def test_plan_and_apply_appends_only_new_ids(tmp_path: Path):
     apply_plan(plan)
 
     # base should now contain two records (a + b)
-    lines = [l for l in base.read_text(encoding="utf-8").splitlines() if l.strip()]
+    lines = [
+        line for line in base.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
     assert len(lines) == 2
