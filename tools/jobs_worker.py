@@ -217,11 +217,24 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
                 if not link_path.exists():
                     try:
                         os.link(str(r.dest_path), str(link_path))
+                        status["raw_inputs_provenance"] = "hardlink:vault/raw"
                     except Exception:
                         # fallback to copy
                         link_path.write_bytes(Path(r.dest_path).read_bytes())
+                        status["raw_inputs_provenance"] = "copy:vault/raw"
 
         status["metrics"]["ingested_files"] = len(ingested)
+        status["raw_ingest"] = {
+            "vault_id": vault_id,
+            "files": [
+                {
+                    "src": str(getattr(r, "src_path", "")) if getattr(r, "src_path", None) else None,
+                    "dest": str(getattr(r, "dest_path", "")) if getattr(r, "dest_path", None) else None,
+                    "sha256": str(getattr(r, "sha256", "")) if getattr(r, "sha256", None) else None,
+                }
+                for r in ingested
+            ],
+        }
         write_json(jp.status_json, status)
         append_log(jp.log_txt, f"ingested_files={len(ingested)}")
 
