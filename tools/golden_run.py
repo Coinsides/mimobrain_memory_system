@@ -30,7 +30,14 @@ def run_id() -> str:
 
 
 def answer_with_bundle(
-    q: dict, *, db: Path, target_level: str, limit: int, config: str | None = None
+    q: dict,
+    *,
+    db: Path,
+    target_level: str,
+    limit: int,
+    config: str | None = None,
+    data_root: Path | None = None,
+    workspace: str | None = None,
 ) -> dict:
     """Rule-based answerer using build_bundle (P1-E).
 
@@ -111,8 +118,15 @@ def answer_with_bundle(
             vault_roots = None
             raw_manifest_path = None
 
+    if not workspace:
+        raise SystemExit(
+            "missing workspace scope: pass --workspace (membership fence is required)"
+        )
+
     bundle = build_bundle(
         db_path=db,
+        data_root=data_root,
+        workspace=str(workspace),
         query=search_query,
         target_level=target_level,
         template_name=template,
@@ -322,6 +336,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Optional meta.sqlite path; enables bundle-based answering",
     )
+    p.add_argument("--data-root", default=None, help="DATA_ROOT (membership)")
+    p.add_argument("--workspace", default=None, help="workspace scope (membership fence)")
     p.add_argument("--config", default=None, help="Path to ms_config.json (optional)")
     p.add_argument(
         "--target-level", default="private", choices=["private", "org", "public"]
@@ -353,6 +369,8 @@ def main(argv: list[str] | None = None) -> int:
                     target_level=ns.target_level,
                     limit=int(ns.limit),
                     config=ns.config,
+                    data_root=(Path(ns.data_root) if ns.data_root else None),
+                    workspace=(str(ns.workspace) if ns.workspace else None),
                 )
             except Exception:
                 ans = placeholder_answer(q)

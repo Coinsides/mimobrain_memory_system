@@ -93,6 +93,7 @@ def search_mu(
     target_level: str = "private",
     include_snippet: bool = False,
     limit: int = 20,
+    allow_mu_ids: set[str] | None = None,
 ) -> list[SearchResult]:
     init_db(db_path)
 
@@ -135,6 +136,19 @@ def search_mu(
         joins.append("JOIN mu_tag ON mu_tag.mu_id = mu.mu_id")
         where.append("mu_tag.tag = :tag")
         params["tag"] = tag
+
+    if allow_mu_ids is not None:
+        # Apply membership fence at the SQL level.
+        if not allow_mu_ids:
+            return []
+        # Use named params to avoid mixing positional + named bindings.
+        ids = sorted(allow_mu_ids)
+        ph = []
+        for i, mid in enumerate(ids):
+            k = f"allow_id_{i}"
+            ph.append(f":{k}")
+            params[k] = mid
+        where.append("mu.mu_id IN (" + ",".join(ph) + ")")
 
     q = (
         f"SELECT mu.mu_id, mu.summary, mu.privacy_level, mu.path, {score_expr} as score FROM mu "
@@ -202,6 +216,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p = argparse.ArgumentParser()
     p.add_argument("--db", required=True)
+    p.add_argument("--data-root", default=None, help="DATA_ROOT (used to locate workspaces/membership.jsonl)")
+    p.add_argument("--workspace", required=True, help="workspace scope (membership fence)")
     p.add_argument("--query", default=None)
     p.add_argument("--since", default=None)
     p.add_argument("--until", default=None)
@@ -223,8 +239,24 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--limit", type=int, default=20)
     ns = p.parse_args(argv)
 
+    from tools.membership import (
+        canonicalize_mu_ids_single_hop,
+        infer_data_root_from_db,
+        load_effective_membership,
+    )
+
+    db_path = Path(ns.db)
+    data_root = Path(ns.data_root) if ns.data_root else infer_data_root_from_db(db_path)
+
+    effective_set, membership_diag = load_effective_membership(
+        data_root=data_root, workspace_id=str(ns.workspace)
+    )
+    canonical_set, canon_diag = canonicalize_mu_ids_single_hop(
+        db_path=db_path, mu_ids=effective_set
+    )
+
     res = search_mu(
-        Path(ns.db),
+        db_path,
         query=ns.query,
         since=ns.since,
         until=ns.until,
@@ -233,10 +265,18 @@ def main(argv: list[str] | None = None) -> int:
         target_level=ns.target_level,
         include_snippet=bool(ns.snippets),
         limit=ns.limit,
+        allow_mu_ids=canonical_set,
     )
 
     obj = {
         "db": ns.db,
+        "data_root": str(data_root),
+        "workspace": ns.workspace,
+        "membership": {
+            **membership_diag.__dict__,
+            "canonicalized_count": len(canonical_set),
+            "canonicalization": canon_diag,
+        },
         "query": ns.query,
         "filters": {
             "since": ns.since,

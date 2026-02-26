@@ -68,12 +68,24 @@ snapshot:
     raw_manifest = tmp_path / "raw_manifest.jsonl"
     raw_manifest.write_text("", encoding="utf-8")
 
+    # membership fence
+    ws_dir = tmp_path / "workspaces"
+    ws_dir.mkdir(exist_ok=True)
+    (ws_dir / "membership.jsonl").write_text(
+        '{"event":"add","workspace_id":"ws_test","mu_id":"mu_bad","at":"2026-02-26T00:00:00Z","source":"test"}\n',
+        encoding="utf-8",
+    )
+
     from tools.run_bundle_repair_pipeline import main
 
     rc = main(
         [
             "--db",
             str(db),
+            "--data-root",
+            str(tmp_path),
+            "--workspace",
+            "ws_test",
             "--query",
             "bad",
             "--runs-root",

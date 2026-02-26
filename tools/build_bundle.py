@@ -39,6 +39,8 @@ def build_bundle(
     *,
     db_path: Path,
     query: str,
+    workspace: str,
+    data_root: Path | None = None,
     days: int = 7,
     template: str = "time_overview_v1",
     target_level: str = "private",
@@ -102,6 +104,20 @@ def build_bundle(
     include_snippet = evidence_depth == "mu_snippets"
     include_raw_quotes = evidence_depth == "raw_quotes"
 
+    from tools.membership import (
+        canonicalize_mu_ids_single_hop,
+        infer_data_root_from_db,
+        load_effective_membership,
+    )
+
+    dr = data_root if data_root is not None else infer_data_root_from_db(db_path)
+    effective_set, membership_diag = load_effective_membership(
+        data_root=dr, workspace_id=str(workspace)
+    )
+    canonical_set, canon_diag = canonicalize_mu_ids_single_hop(
+        db_path=db_path, mu_ids=effective_set
+    )
+
     results = search_mu(
         db_path,
         query=query,
@@ -112,6 +128,7 @@ def build_bundle(
         target_level=target_level,
         include_snippet=include_snippet,
         limit=int(limit),
+        allow_mu_ids=canonical_set,
     )
 
     evidence_degraded_mu_ids: list[str] = []
@@ -201,7 +218,7 @@ def build_bundle(
     bundle = {
         "bundle_id": default_bundle_id(),
         "template": template,
-        "scope": {"time_window_days": int(days), "since": since},
+        "scope": {"time_window_days": int(days), "since": since, "workspace": str(workspace)},
         "source_mu_ids": mu_ids,
         "created_at": utc_now(),
         "expires_at": None,
@@ -222,6 +239,14 @@ def build_bundle(
         bundle.setdefault("diagnostics", {})
         if diagnostics:
             bundle["diagnostics"].update(diagnostics)
+        bundle["diagnostics"].setdefault(
+            "membership",
+            {
+                **membership_diag.__dict__,
+                "canonicalized_count": len(canonical_set),
+                "canonicalization": canon_diag,
+            },
+        )
         if vault_roots:
             bundle["diagnostics"].setdefault("vault_roots", vault_roots)
         if raw_manifest_path is not None:
@@ -253,6 +278,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p = argparse.ArgumentParser()
     p.add_argument("--db", required=True)
+    p.add_argument("--data-root", default=None, help="DATA_ROOT (used to locate workspaces/membership.jsonl)")
+    p.add_argument("--workspace", required=True, help="workspace scope (membership fence)")
     p.add_argument("--config", default=None, help="Path to ms_config.json (optional)")
     p.add_argument("--query", required=True)
     p.add_argument("--days", type=int, default=7)
@@ -298,6 +325,8 @@ def main(argv: list[str] | None = None) -> int:
 
     out = build_bundle(
         db_path=Path(ns.db),
+        data_root=(Path(ns.data_root) if ns.data_root else None),
+        workspace=str(ns.workspace),
         query=ns.query,
         days=int(ns.days),
         template=ns.template,

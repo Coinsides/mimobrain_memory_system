@@ -74,6 +74,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Authoritative runs root (recommended). If omitted, tries to use config.runs_root_repair.",
     )
+    ap.add_argument("--data-root", default=None, help="DATA_ROOT (membership)")
+    ap.add_argument("--workspace", required=True, help="workspace scope (membership fence)")
     ap.add_argument("--query", required=True)
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--template", default="time_overview_v1")
@@ -133,6 +135,8 @@ def main(argv: list[str] | None = None) -> int:
 
     bundle = build_bundle(
         db_path=Path(ns.db),
+        data_root=(Path(ns.data_root) if ns.data_root else None),
+        workspace=str(ns.workspace),
         query=ns.query,
         days=int(ns.days),
         template=str(ns.template),

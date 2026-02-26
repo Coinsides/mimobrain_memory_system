@@ -47,7 +47,28 @@ def test_golden_run_bundle_answerer_can_pass(tmp_path: Path):
     out_dir = tmp_path / "out"
     from tools.golden_run import main
 
-    rc = main(["--questions", str(qpath), "--out-dir", str(out_dir), "--db", str(db)])
+    # membership fence
+    ws_dir = tmp_path / "workspaces"
+    ws_dir.mkdir(exist_ok=True)
+    (ws_dir / "membership.jsonl").write_text(
+        '{"event":"add","workspace_id":"ws_test","mu_id":"mu_a","at":"2026-02-26T00:00:00Z","source":"test"}\n',
+        encoding="utf-8",
+    )
+
+    rc = main(
+        [
+            "--questions",
+            str(qpath),
+            "--out-dir",
+            str(out_dir),
+            "--db",
+            str(db),
+            "--data-root",
+            str(tmp_path),
+            "--workspace",
+            "ws_test",
+        ]
+    )
     assert rc == 0
 
     report = json.loads((out_dir / "report.json").read_text(encoding="utf-8"))

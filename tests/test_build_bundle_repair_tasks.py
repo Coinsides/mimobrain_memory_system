@@ -64,8 +64,17 @@ snapshot:
     con.commit()
     con.close()
 
+    ws_dir = tmp_path / "workspaces"
+    ws_dir.mkdir(exist_ok=True)
+    (ws_dir / "membership.jsonl").write_text(
+        '{"event":"add","workspace_id":"ws_test","mu_id":"mu_bad","at":"2026-02-26T00:00:00Z","source":"test"}\n',
+        encoding="utf-8",
+    )
+
     bundle = build_bundle(
         db_path=db,
+        data_root=tmp_path,
+        workspace="ws_test",
         query="bad",
         days=7,
         target_level="private",

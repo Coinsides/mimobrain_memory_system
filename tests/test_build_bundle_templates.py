@@ -35,8 +35,17 @@ def test_build_bundle_can_compile_template_and_attach_diagnostics(tmp_path: Path
 
     from tools.build_bundle import build_bundle
 
+    ws_dir = tmp_path / "workspaces"
+    ws_dir.mkdir(exist_ok=True)
+    (ws_dir / "membership.jsonl").write_text(
+        '{"event":"add","workspace_id":"ws_test","mu_id":"mu_a","at":"2026-02-26T00:00:00Z","source":"test"}\n',
+        encoding="utf-8",
+    )
+
     b = build_bundle(
         db_path=db,
+        data_root=tmp_path,
+        workspace="ws_test",
         query="隐私",
         template_name="privacy_policy_v1",
         question_setup={"scope": {"time_window_days": 7}},
