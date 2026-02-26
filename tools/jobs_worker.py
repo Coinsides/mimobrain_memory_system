@@ -103,7 +103,9 @@ def unlock(lock_path: Path) -> None:
             lock_path.unlink()
 
 
-def run_cmd(*args: str, cwd: Path, env: dict[str, str] | None, log_path: Path) -> None:
+def run_cmd(
+    *args: str, cwd: Path, env: dict[str, str] | None, log_path: Path
+) -> subprocess.CompletedProcess[str]:
     append_log(log_path, "$ " + " ".join(args))
     p = subprocess.run(
         list(args),
@@ -120,6 +122,7 @@ def run_cmd(*args: str, cwd: Path, env: dict[str, str] | None, log_path: Path) -
         append_log(log_path, p.stderr.rstrip())
     if p.returncode != 0:
         raise RuntimeError(f"command failed rc={p.returncode}: {' '.join(args)}")
+    return p
 
 
 def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
@@ -156,6 +159,14 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             "started_at": now_iso_z(),
             "updated_at": now_iso_z(),
             "last_error": None,
+            "metrics": {
+                "ingested_files": 0,
+                "written_mus": 0,
+                "validated": None,
+                "membership_added": 0,
+                "ingested_mu_files": 0,
+                "indexed": None,
+            },
         }
         write_json(jp.status_json, status)
 
@@ -187,6 +198,8 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
                         # fallback to copy
                         link_path.write_bytes(Path(r.dest_path).read_bytes())
 
+        status["metrics"]["ingested_files"] = len(ingested)
+        write_json(jp.status_json, status)
         append_log(jp.log_txt, f"ingested_files={len(ingested)}")
 
         env = dict(os.environ)
@@ -197,7 +210,7 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
 
         # 2) PACK_MU
         set_step("pack_mu")
-        run_cmd(
+        p_pack = run_cmd(
             sys.executable,
             "-m",
             "mimo_spec.tools.mimo_pack",
@@ -215,10 +228,19 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             env=env,
             log_path=jp.log_txt,
         )
+        # parse: written_mus=N
+        try:
+            for ln in (p_pack.stdout or "").splitlines():
+                if ln.strip().startswith("written_mus="):
+                    status["metrics"]["written_mus"] = int(ln.split("=", 1)[1].strip())
+                    break
+        except Exception:
+            pass
+        write_json(jp.status_json, status)
 
         # 3) VALIDATE_MU
         set_step("validate_mu")
-        run_cmd(
+        p_val = run_cmd(
             sys.executable,
             "-m",
             "mimo_spec.tools.mimo_validate",
@@ -228,6 +250,9 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             env=env,
             log_path=jp.log_txt,
         )
+        # parse: checked=N failed=0 warnings=0
+        status["metrics"]["validated"] = {"stdout": (p_val.stdout or "").strip()}
+        write_json(jp.status_json, status)
 
         # 4) ASSIGN_MEMBERSHIP
         set_step("assign_membership")
@@ -238,11 +263,13 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             mu_ids=mu_ids,
             source=f"job:{job_id}",
         )
+        status["metrics"]["membership_added"] = len(mu_ids)
+        write_json(jp.status_json, status)
         append_log(jp.log_txt, f"membership_added={len(mu_ids)} workspace={workspace_id}")
 
         # 5) INGEST_MU
         set_step("ingest_mu")
-        run_cmd(
+        p_ing_mu = run_cmd(
             sys.executable,
             "-m",
             "tools.vault_ingest_mu",
@@ -256,10 +283,19 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             env=env,
             log_path=jp.log_txt,
         )
+        # parse: ingested_mu_files=N
+        try:
+            for ln in (p_ing_mu.stdout or "").splitlines():
+                if ln.strip().startswith("ingested_mu_files="):
+                    status["metrics"]["ingested_mu_files"] = int(ln.split("=", 1)[1].strip())
+                    break
+        except Exception:
+            pass
+        write_json(jp.status_json, status)
 
         # 6) INDEX
         set_step("index")
-        run_cmd(
+        p_idx = run_cmd(
             sys.executable,
             "-m",
             "tools.index_mu",
@@ -272,6 +308,14 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             env=env,
             log_path=jp.log_txt,
         )
+        # parse: {"indexed": N}
+        try:
+            obj = json.loads((p_idx.stdout or "").strip() or "{}")
+            if isinstance(obj, dict) and isinstance(obj.get("indexed"), int):
+                status["metrics"]["indexed"] = int(obj["indexed"])
+        except Exception:
+            pass
+        write_json(jp.status_json, status)
 
         # done
         status["status"] = "done"
