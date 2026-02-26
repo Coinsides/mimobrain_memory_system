@@ -69,6 +69,8 @@ def index_mu_dir(mu_root: Path, db_path: Path, *, reset: bool = False) -> dict:
             mu_key = idem.get("mu_key")
             privacy_level = privacy.get("level")
             corrects = links.get("corrects")
+            supersedes = links.get("supersedes")
+            duplicate_of = links.get("duplicate_of")
             tombstone = mu.get("tombstone")
 
             st = path.stat()
@@ -77,10 +79,11 @@ def index_mu_dir(mu_root: Path, db_path: Path, *, reset: bool = False) -> dict:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO mu
-                  (mu_id, time, summary, content_hash, mu_key, privacy_level, corrects_json, tombstone_json,
+                  (mu_id, time, summary, content_hash, mu_key, privacy_level,
+                   corrects_json, supersedes_json, duplicate_of_json, tombstone_json,
                    source_kind, source_note, path, mtime)
                 VALUES
-                  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     mu_id,
@@ -91,6 +94,12 @@ def index_mu_dir(mu_root: Path, db_path: Path, *, reset: bool = False) -> dict:
                     privacy_level if isinstance(privacy_level, str) else None,
                     json.dumps(corrects, ensure_ascii=False)
                     if corrects is not None
+                    else None,
+                    json.dumps(supersedes, ensure_ascii=False)
+                    if supersedes is not None
+                    else None,
+                    json.dumps(duplicate_of, ensure_ascii=False)
+                    if duplicate_of is not None
                     else None,
                     json.dumps(tombstone, ensure_ascii=False)
                     if tombstone is not None

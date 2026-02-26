@@ -114,10 +114,18 @@ def _parse_json_list(maybe_json: str | None) -> list[str]:
 def canonicalize_mu_ids_single_hop(
     *, db_path: Path, mu_ids: set[str]
 ) -> tuple[set[str], dict]:
-    """v0.1 canonicalization.
+    """v0.1 canonicalization (convergent single-hop).
 
-    - Exclude tombstoned MU.
-    - Apply single-hop corrects folding (reverse index built from corrects_json).
+    Authoritative semantics: see
+      - Membership_Layer_Design_v0_1_2026-02-26.md §3.2 (Canonical MU resolution)
+
+    Behavior (MVP):
+    - Exclude tombstoned MU ids.
+    - Fold to canonical heads using (in priority order):
+        1) reverse_supersedes (new MU supersedes old)
+        2) reverse_corrects (new MU corrects old)
+        3) forward_duplicate_of (this MU is duplicate of canonical target)
+    - Apply the above single-hop rewrites repeatedly until stable (bounded; cycle-safe).
 
     Returns: (canonical_set, diagnostics)
     """
@@ -127,42 +135,98 @@ def canonicalize_mu_ids_single_hop(
     if not mu_ids:
         return set(), {"input": 0, "output": 0}
 
-    # Build reverse corrects map: old_mu_id -> new_mu_id (single-hop)
     reverse_corrects: dict[str, str] = {}
+    reverse_supersedes: dict[str, str] = {}
+    forward_duplicate_of: dict[str, str] = {}
     tombstoned: set[str] = set()
 
     with connect(db_path) as conn:
         rows = conn.execute(
-            "SELECT mu_id, corrects_json, tombstone_json FROM mu WHERE corrects_json IS NOT NULL OR tombstone_json IS NOT NULL"
+            """
+            SELECT mu_id, corrects_json, supersedes_json, duplicate_of_json, tombstone_json
+            FROM mu
+            WHERE corrects_json IS NOT NULL
+               OR supersedes_json IS NOT NULL
+               OR duplicate_of_json IS NOT NULL
+               OR tombstone_json IS NOT NULL
+            """
         ).fetchall()
 
     for r in rows:
         mu_id = str(r["mu_id"])
         if r["tombstone_json"] not in (None, "null", ""):
             tombstoned.add(mu_id)
+
+        # reverse edges: old -> new
         for old in _parse_json_list(r["corrects_json"]):
-            # single-hop: keep the first seen mapping (stable across runs given stable DB)
             if old not in reverse_corrects:
                 reverse_corrects[old] = mu_id
+        for old in _parse_json_list(r["supersedes_json"]):
+            if old not in reverse_supersedes:
+                reverse_supersedes[old] = mu_id
+
+        # forward edge: dup -> canonical
+        dups = _parse_json_list(r["duplicate_of_json"])
+        if dups:
+            # single-hop: take first target only (stable)
+            if mu_id not in forward_duplicate_of:
+                forward_duplicate_of[mu_id] = dups[0]
+
+    folded_by_corrects = 0
+    folded_by_supersedes = 0
+    folded_by_duplicate_of = 0
+    tombstoned_excluded = 0
+    cycles_detected = 0
+
+    def step(mid: str) -> tuple[str, str | None]:
+        """Return (new_mid, edge_type_used)."""
+        if mid in reverse_supersedes:
+            return reverse_supersedes[mid], "supersedes"
+        if mid in reverse_corrects:
+            return reverse_corrects[mid], "corrects"
+        if mid in forward_duplicate_of:
+            return forward_duplicate_of[mid], "duplicate_of"
+        return mid, None
 
     out: set[str] = set()
-    mapped = 0
-    dropped_tombstone = 0
 
-    for mid in mu_ids:
-        new_mid = reverse_corrects.get(mid, mid)
-        if new_mid != mid:
-            mapped += 1
-        if new_mid in tombstoned:
-            dropped_tombstone += 1
-            continue
-        out.add(new_mid)
+    for start in mu_ids:
+        cur = start
+        seen: set[str] = set()
+        # bounded convergence: still "single-hop" per iteration
+        for _ in range(16):
+            if cur in tombstoned:
+                tombstoned_excluded += 1
+                cur = ""
+                break
+            if cur in seen:
+                cycles_detected += 1
+                break
+            seen.add(cur)
+            nxt, edge = step(cur)
+            if edge is None or nxt == cur:
+                break
+            if edge == "corrects":
+                folded_by_corrects += 1
+            elif edge == "supersedes":
+                folded_by_supersedes += 1
+            elif edge == "duplicate_of":
+                folded_by_duplicate_of += 1
+            cur = nxt
+
+        if cur and (cur not in tombstoned):
+            out.add(cur)
 
     diag = {
         "input": len(mu_ids),
         "output": len(out),
-        "mapped_by_corrects": mapped,
-        "dropped_tombstone": dropped_tombstone,
+        "folded_by_corrects": folded_by_corrects,
+        "folded_by_supersedes": folded_by_supersedes,
+        "folded_by_duplicate_of": folded_by_duplicate_of,
+        "tombstoned_excluded": tombstoned_excluded,
+        "cycles_detected": cycles_detected,
         "reverse_corrects_size": len(reverse_corrects),
+        "reverse_supersedes_size": len(reverse_supersedes),
+        "forward_duplicate_of_size": len(forward_duplicate_of),
     }
     return out, diag

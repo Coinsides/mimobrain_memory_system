@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS mu (
   mu_key TEXT,
   privacy_level TEXT,
   corrects_json TEXT,
+  supersedes_json TEXT,
+  duplicate_of_json TEXT,
   tombstone_json TEXT,
   source_kind TEXT,
   source_note TEXT,
@@ -95,9 +97,19 @@ def connect(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
+def _ensure_column(conn: sqlite3.Connection, table: str, col: str, coltype: str) -> None:
+    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+    have = {r[1] for r in rows}
+    if col not in have:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {coltype}")
+
+
 def init_db(db_path: Path) -> None:
     with connect(db_path) as conn:
         conn.executescript(SCHEMA_SQL)
+        # lightweight migrations (non-destructive)
+        _ensure_column(conn, "mu", "supersedes_json", "TEXT")
+        _ensure_column(conn, "mu", "duplicate_of_json", "TEXT")
 
 
 def reset_db(db_path: Path) -> None:
@@ -108,6 +120,7 @@ def reset_db(db_path: Path) -> None:
             DROP TABLE IF EXISTS mu_tag;
             DROP TABLE IF EXISTS tag;
             DROP TABLE IF EXISTS mu;
+            -- note: schema migrations are handled in init_db (ALTER TABLE ADD COLUMN)
             DROP TABLE IF EXISTS mu_fts;
             """
         )
