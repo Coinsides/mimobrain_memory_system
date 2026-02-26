@@ -130,6 +130,28 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
     if not jp.job_json.exists():
         return False
 
+    def _move_inbox(job: dict, *, dest_state: str) -> None:
+        """Move inbox folder from _queue/<job_id> to _done/_failed, best-effort."""
+        try:
+            inbox_path = job.get("inbox_path")
+            if not isinstance(inbox_path, str) or not inbox_path:
+                return
+            inbox_dir = Path(inbox_path)
+            if not inbox_dir.exists():
+                return
+            # Expect .../inbox/<ws>/_queue/<job_id>
+            if inbox_dir.parent.name != "_queue":
+                return
+            ws_dir = inbox_dir.parent.parent
+            src = inbox_dir
+            dst = ws_dir / ("_" + dest_state) / src.name
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if dst.exists():
+                return
+            src.rename(dst)
+        except Exception:
+            return
+
     if not try_lock(jp.lock_file):
         return False
 
@@ -324,6 +346,7 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
         status["finished_at"] = now_iso_z()
         write_json(jp.status_json, status)
         append_log(jp.log_txt, f"[{now_iso_z()}] DONE")
+        _move_inbox(job, dest_state="done")
         return True
 
     except Exception as e:
@@ -341,6 +364,7 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
         )
         write_json(jp.status_json, status)
         append_log(jp.log_txt, f"[{now_iso_z()}] FAILED: {e}")
+        _move_inbox(job, dest_state="failed")
         return True
 
     finally:
