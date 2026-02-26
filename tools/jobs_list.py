@@ -32,6 +32,8 @@ class JobRow:
     updated_at: str | None
     created_at: str | None
     last_error: str | None
+    retry_of: str | None
+    attempt: int | None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -79,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
         updated_at = st.get("updated_at")
         created_at = st.get("created_at") or job.get("created_at")
         last_error = st.get("last_error")
+        retry_of = job.get("retry_of") or st.get("retry_of")
+        attempt = job.get("attempt") or st.get("attempt")
 
         if ns.status and status != ns.status:
             continue
@@ -94,6 +98,8 @@ def main(argv: list[str] | None = None) -> int:
                 updated_at=str(updated_at) if updated_at is not None else None,
                 created_at=str(created_at) if created_at is not None else None,
                 last_error=str(last_error) if last_error is not None else None,
+                retry_of=str(retry_of) if retry_of is not None else None,
+                attempt=int(attempt) if attempt is not None else None,
             )
         )
 
