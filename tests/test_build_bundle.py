@@ -25,6 +25,15 @@ def _write_mu(
 
 
 def _write_membership(tmp_path: Path, workspace: str, mu_ids: list[str]):
+    # Ensure membership writer tool works (pipeline step)
+    from tools.assign_membership import append_membership_events
+
+    append_membership_events(
+        data_root=tmp_path, workspace=workspace, mu_ids=mu_ids, source="test"
+    )
+
+    # (Also leave the explicit file on disk for clarity)
+
     ws_dir = tmp_path / "workspaces"
     ws_dir.mkdir(exist_ok=True)
     # membership.jsonl (no BOM)
