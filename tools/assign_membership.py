@@ -52,13 +52,44 @@ class AssignResult:
 def append_membership_events(
     *, data_root: Path, workspace: str, mu_ids: list[str], source: str
 ) -> AssignResult:
+    """Append membership add events, skipping no-op duplicates (idempotent)."""
     ws_dir = data_root / "workspaces"
     ws_dir.mkdir(parents=True, exist_ok=True)
     membership_path = ws_dir / "membership.jsonl"
 
+    # Load current effective set to avoid exploding the event log on repeated imports.
+    effective: set[str] = set()
+    if membership_path.exists():
+        for line in membership_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            s = line.strip().lstrip("\ufeff")
+            if not s:
+                continue
+            try:
+                obj = json.loads(s)
+            except Exception:
+                continue
+            if not isinstance(obj, dict):
+                continue
+            if obj.get("workspace_id") != workspace:
+                continue
+            mid = obj.get("mu_id")
+            if not isinstance(mid, str) or not mid:
+                continue
+            ev = obj.get("event")
+            if ev == "add":
+                effective.add(mid)
+            elif ev == "remove":
+                effective.discard(mid)
+
     at = now_iso_z()
     lines: list[str] = []
+    appended = 0
+    skipped = 0
+
     for mid in mu_ids:
+        if mid in effective:
+            skipped += 1
+            continue
         lines.append(
             json.dumps(
                 {
@@ -71,6 +102,8 @@ def append_membership_events(
                 ensure_ascii=False,
             )
         )
+        effective.add(mid)
+        appended += 1
 
     if lines:
         # Avoid BOM; always write utf-8.
@@ -83,7 +116,7 @@ def append_membership_events(
         workspace=str(workspace),
         membership_path=str(membership_path),
         mu_count=len(mu_ids),
-        appended_events=len(lines),
+        appended_events=appended,
         source=str(source),
     )
 

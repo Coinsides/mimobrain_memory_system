@@ -186,6 +186,7 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
                 "written_mus": 0,
                 "validated": None,
                 "membership_added": 0,
+                "membership_skipped": 0,
                 "ingested_mu_files": 0,
                 "indexed": None,
             },
@@ -279,15 +280,19 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
         # 4) ASSIGN_MEMBERSHIP
         set_step("assign_membership")
         mu_ids = [p.stem for p in sorted(mu_out_dir.rglob("*.mimo")) if p.is_file()]
-        append_membership_events(
+        res_mem = append_membership_events(
             data_root=data_root,
             workspace=workspace_id,
             mu_ids=mu_ids,
             source=f"job:{job_id}",
         )
-        status["metrics"]["membership_added"] = len(mu_ids)
+        status["metrics"]["membership_added"] = int(res_mem.appended_events)
+        status["metrics"]["membership_skipped"] = max(0, len(mu_ids) - int(res_mem.appended_events))
         write_json(jp.status_json, status)
-        append_log(jp.log_txt, f"membership_added={len(mu_ids)} workspace={workspace_id}")
+        append_log(
+            jp.log_txt,
+            f"membership_added={int(res_mem.appended_events)} skipped={max(0, len(mu_ids)-int(res_mem.appended_events))} workspace={workspace_id}",
+        )
 
         # 5) INGEST_MU
         set_step("ingest_mu")
