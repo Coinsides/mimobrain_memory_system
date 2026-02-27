@@ -69,3 +69,4 @@
 - Jobs provenance: record raw_inputs_provenance (hardlink/copy) + raw_ingest outputs in status.json.
 - Library: add library_list CLI (membership fence + canonical).
 - Distiller v0: add distill_srb (bundle→srb.md/srb.json) for manual session resume injection.
+- CI hygiene: fix ruff lint violations (E741 ambiguous variable name; F401 unused import) and apply ruff formatting to keep CI green.
