@@ -50,11 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     db_path = Path(ns.db)
     init_db(db_path)
 
-    data_root = (
-        Path(ns.data_root)
-        if ns.data_root
-        else infer_data_root_from_db(db_path)
-    )
+    data_root = Path(ns.data_root) if ns.data_root else infer_data_root_from_db(db_path)
 
     effective_set, membership_diag = load_effective_membership(
         data_root=data_root, workspace_id=str(ns.workspace)
@@ -103,7 +99,9 @@ def main(argv: list[str] | None = None) -> int:
                     mu_id=str(r["mu_id"]),
                     time=str(r["time"]) if r["time"] is not None else None,
                     summary=str(r["summary"]) if r["summary"] is not None else None,
-                    privacy_level=str(r["privacy_level"]) if r["privacy_level"] is not None else None,
+                    privacy_level=str(r["privacy_level"])
+                    if r["privacy_level"] is not None
+                    else None,
                     path=str(r["path"]) if r["path"] is not None else None,
                 )
             )

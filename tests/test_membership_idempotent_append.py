@@ -29,5 +29,5 @@ def test_append_membership_events_skips_duplicates(tmp_path: Path):
     lines = membership_path.read_text(encoding="utf-8").splitlines()
     # 2 adds + 1 add = 3 events total
     assert len(lines) == 3
-    objs = [json.loads(l) for l in lines]
+    objs = [json.loads(line) for line in lines]
     assert [o["mu_id"] for o in objs] == ["mu_1", "mu_2", "mu_3"]

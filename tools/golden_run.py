@@ -337,7 +337,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional meta.sqlite path; enables bundle-based answering",
     )
     p.add_argument("--data-root", default=None, help="DATA_ROOT (membership)")
-    p.add_argument("--workspace", default=None, help="workspace scope (membership fence)")
+    p.add_argument(
+        "--workspace", default=None, help="workspace scope (membership fence)"
+    )
     p.add_argument("--config", default=None, help="Path to ms_config.json (optional)")
     p.add_argument(
         "--target-level", default="private", choices=["private", "org", "public"]

@@ -75,7 +75,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Authoritative runs root (recommended). If omitted, tries to use config.runs_root_repair.",
     )
     ap.add_argument("--data-root", default=None, help="DATA_ROOT (membership)")
-    ap.add_argument("--workspace", required=True, help="workspace scope (membership fence)")
+    ap.add_argument(
+        "--workspace", required=True, help="workspace scope (membership fence)"
+    )
     ap.add_argument("--query", required=True)
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--template", default="time_overview_v1")

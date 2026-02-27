@@ -97,7 +97,9 @@ def connect(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
-def _ensure_column(conn: sqlite3.Connection, table: str, col: str, coltype: str) -> None:
+def _ensure_column(
+    conn: sqlite3.Connection, table: str, col: str, coltype: str
+) -> None:
     rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
     have = {r[1] for r in rows}
     if col not in have:

@@ -60,7 +60,9 @@ def append_membership_events(
     # Load current effective set to avoid exploding the event log on repeated imports.
     effective: set[str] = set()
     if membership_path.exists():
-        for line in membership_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        for line in membership_path.read_text(
+            encoding="utf-8", errors="ignore"
+        ).splitlines():
             s = line.strip().lstrip("\ufeff")
             if not s:
                 continue

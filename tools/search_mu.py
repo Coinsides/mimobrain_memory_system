@@ -216,8 +216,14 @@ def main(argv: list[str] | None = None) -> int:
 
     p = argparse.ArgumentParser()
     p.add_argument("--db", required=True)
-    p.add_argument("--data-root", default=None, help="DATA_ROOT (used to locate workspaces/membership.jsonl)")
-    p.add_argument("--workspace", required=True, help="workspace scope (membership fence)")
+    p.add_argument(
+        "--data-root",
+        default=None,
+        help="DATA_ROOT (used to locate workspaces/membership.jsonl)",
+    )
+    p.add_argument(
+        "--workspace", required=True, help="workspace scope (membership fence)"
+    )
     p.add_argument("--query", default=None)
     p.add_argument("--since", default=None)
     p.add_argument("--until", default=None)

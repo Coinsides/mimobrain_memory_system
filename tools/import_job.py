@@ -58,7 +58,9 @@ def copy_into(src: Path, dst_dir: Path) -> None:
 
 def write_json(path: Path, obj: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 @dataclass(frozen=True)
@@ -76,9 +78,13 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--data-root", required=True)
     p.add_argument("--workspace", required=True)
-    p.add_argument("--in", dest="inp", required=True, help="File or directory to import")
+    p.add_argument(
+        "--in", dest="inp", required=True, help="File or directory to import"
+    )
     p.add_argument("--split", default="line_window:200")
-    p.add_argument("--source-kind", default="file", choices=["file", "chat", "web", "pdf"])
+    p.add_argument(
+        "--source-kind", default="file", choices=["file", "chat", "web", "pdf"]
+    )
     p.add_argument("--vault-id", default="default")
     p.add_argument("--job-id", default=None)
     ns = p.parse_args(argv)

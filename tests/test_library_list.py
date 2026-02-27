@@ -19,8 +19,12 @@ def test_library_list_smoke(tmp_path: Path, capsys):
     (ws_dir / "membership.jsonl").write_text(
         "\n".join(
             [
-                json.dumps({"event": "add", "workspace_id": "ws_design", "mu_id": "mu_1"}),
-                json.dumps({"event": "add", "workspace_id": "ws_design", "mu_id": "mu_2"}),
+                json.dumps(
+                    {"event": "add", "workspace_id": "ws_design", "mu_id": "mu_1"}
+                ),
+                json.dumps(
+                    {"event": "add", "workspace_id": "ws_design", "mu_id": "mu_2"}
+                ),
             ]
         )
         + "\n",
@@ -39,7 +43,18 @@ def test_library_list_smoke(tmp_path: Path, capsys):
         )
         conn.commit()
 
-    rc = main(["--db", str(db), "--data-root", str(data_root), "--workspace", "ws_design", "--limit", "10"])
+    rc = main(
+        [
+            "--db",
+            str(db),
+            "--data-root",
+            str(data_root),
+            "--workspace",
+            "ws_design",
+            "--limit",
+            "10",
+        ]
+    )
     assert rc == 0
     out = capsys.readouterr().out
     obj = json.loads(out)

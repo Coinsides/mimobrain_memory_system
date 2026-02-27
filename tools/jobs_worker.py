@@ -56,7 +56,9 @@ def read_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, obj: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def append_log(log_path: Path, line: str) -> None:
@@ -210,7 +212,9 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
         ingested = []
         for p in sorted(inbox.rglob("*")):
             if p.is_file():
-                r = ingest_file(p, vault_root=data_root / "vaults" / "default", vault_id=vault_id)
+                r = ingest_file(
+                    p, vault_root=data_root / "vaults" / "default", vault_id=vault_id
+                )
                 ingested.append(r)
                 # Create a hardlink (or copy fallback) into job raw_inputs for pack.
                 link_path = raw_inputs_dir / p.name
@@ -228,9 +232,15 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             "vault_id": vault_id,
             "files": [
                 {
-                    "src": str(getattr(r, "src_path", "")) if getattr(r, "src_path", None) else None,
-                    "dest": str(getattr(r, "dest_path", "")) if getattr(r, "dest_path", None) else None,
-                    "sha256": str(getattr(r, "sha256", "")) if getattr(r, "sha256", None) else None,
+                    "src": str(getattr(r, "src_path", ""))
+                    if getattr(r, "src_path", None)
+                    else None,
+                    "dest": str(getattr(r, "dest_path", ""))
+                    if getattr(r, "dest_path", None)
+                    else None,
+                    "sha256": str(getattr(r, "sha256", ""))
+                    if getattr(r, "sha256", None)
+                    else None,
                 }
                 for r in ingested
             ],
@@ -300,11 +310,13 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
             source=f"job:{job_id}",
         )
         status["metrics"]["membership_added"] = int(res_mem.appended_events)
-        status["metrics"]["membership_skipped"] = max(0, len(mu_ids) - int(res_mem.appended_events))
+        status["metrics"]["membership_skipped"] = max(
+            0, len(mu_ids) - int(res_mem.appended_events)
+        )
         write_json(jp.status_json, status)
         append_log(
             jp.log_txt,
-            f"membership_added={int(res_mem.appended_events)} skipped={max(0, len(mu_ids)-int(res_mem.appended_events))} workspace={workspace_id}",
+            f"membership_added={int(res_mem.appended_events)} skipped={max(0, len(mu_ids) - int(res_mem.appended_events))} workspace={workspace_id}",
         )
 
         # 5) INGEST_MU
@@ -327,7 +339,9 @@ def consume_one_job(*, data_root: Path, job_dir: Path) -> bool:
         try:
             for ln in (p_ing_mu.stdout or "").splitlines():
                 if ln.strip().startswith("ingested_mu_files="):
-                    status["metrics"]["ingested_mu_files"] = int(ln.split("=", 1)[1].strip())
+                    status["metrics"]["ingested_mu_files"] = int(
+                        ln.split("=", 1)[1].strip()
+                    )
                     break
         except Exception:
             pass

@@ -43,10 +43,18 @@ def distill(bundle: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     since = scope.get("since")
     days = scope.get("time_window_days")
 
-    diagnostics = bundle.get("diagnostics") if isinstance(bundle.get("diagnostics"), dict) else {}
-    mem = diagnostics.get("membership") if isinstance(diagnostics.get("membership"), dict) else {}
+    diagnostics = (
+        bundle.get("diagnostics") if isinstance(bundle.get("diagnostics"), dict) else {}
+    )
+    mem = (
+        diagnostics.get("membership")
+        if isinstance(diagnostics.get("membership"), dict)
+        else {}
+    )
 
-    query_on = bundle.get("query_on") if isinstance(bundle.get("query_on"), dict) else {}
+    query_on = (
+        bundle.get("query_on") if isinstance(bundle.get("query_on"), dict) else {}
+    )
     query = query_on.get("query")
 
     source_mu_ids = bundle.get("source_mu_ids")
@@ -54,7 +62,11 @@ def distill(bundle: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         source_mu_ids = []
 
     # Best-effort: surface last few repair tasks
-    repair_tasks = diagnostics.get("repair_tasks") if isinstance(diagnostics.get("repair_tasks"), list) else []
+    repair_tasks = (
+        diagnostics.get("repair_tasks")
+        if isinstance(diagnostics.get("repair_tasks"), list)
+        else []
+    )
 
     srb_obj = {
         "workspace": ws,
@@ -90,12 +102,16 @@ def distill(bundle: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         for t in repair_tasks[:5]:
             if not isinstance(t, dict):
                 continue
-            md_lines.append(f"- {t.get('type')} mu_id={t.get('mu_id')} reason={t.get('reason')}")
+            md_lines.append(
+                f"- {t.get('type')} mu_id={t.get('mu_id')} reason={t.get('reason')}"
+            )
         md_lines.append("")
 
     md_lines.append("## Next actions")
     md_lines.append("- Continue the execution list gaps in order (G-1..G-7).")
-    md_lines.append("- If evidence is degraded, fix pointer resolution config and rerun build_bundle.")
+    md_lines.append(
+        "- If evidence is degraded, fix pointer resolution config and rerun build_bundle."
+    )
     md_lines.append("")
 
     return "\n".join(md_lines).rstrip() + "\n", srb_obj
@@ -121,7 +137,17 @@ def main(argv: list[str] | None = None) -> int:
     _write(md_path, md)
     _write(json_path, json.dumps(obj, ensure_ascii=False, indent=2) + "\n")
 
-    print(json.dumps(asdict(SrbOut(out_dir=str(out_dir), srb_md=str(md_path), srb_json=str(json_path))), ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            asdict(
+                SrbOut(
+                    out_dir=str(out_dir), srb_md=str(md_path), srb_json=str(json_path)
+                )
+            ),
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0
 
 

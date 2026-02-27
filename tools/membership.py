@@ -38,8 +38,7 @@ def infer_data_root_from_db(db_path: Path) -> Path:
     if parent.name.lower() == "index":
         return parent.parent
     raise ValueError(
-        f"Cannot infer DATA_ROOT from db path: {db_path}. "
-        "Pass --data-root explicitly."
+        f"Cannot infer DATA_ROOT from db path: {db_path}. Pass --data-root explicitly."
     )
 
 

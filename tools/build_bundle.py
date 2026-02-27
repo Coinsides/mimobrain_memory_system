@@ -218,7 +218,11 @@ def build_bundle(
     bundle = {
         "bundle_id": default_bundle_id(),
         "template": template,
-        "scope": {"time_window_days": int(days), "since": since, "workspace": str(workspace)},
+        "scope": {
+            "time_window_days": int(days),
+            "since": since,
+            "workspace": str(workspace),
+        },
         "source_mu_ids": mu_ids,
         "created_at": utc_now(),
         "expires_at": None,
@@ -278,8 +282,14 @@ def main(argv: list[str] | None = None) -> int:
 
     p = argparse.ArgumentParser()
     p.add_argument("--db", required=True)
-    p.add_argument("--data-root", default=None, help="DATA_ROOT (used to locate workspaces/membership.jsonl)")
-    p.add_argument("--workspace", required=True, help="workspace scope (membership fence)")
+    p.add_argument(
+        "--data-root",
+        default=None,
+        help="DATA_ROOT (used to locate workspaces/membership.jsonl)",
+    )
+    p.add_argument(
+        "--workspace", required=True, help="workspace scope (membership fence)"
+    )
     p.add_argument("--config", default=None, help="Path to ms_config.json (optional)")
     p.add_argument("--query", required=True)
     p.add_argument("--days", type=int, default=7)

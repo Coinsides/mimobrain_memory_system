@@ -42,14 +42,20 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--data-root", required=True)
     p.add_argument("--limit", type=int, default=20)
-    p.add_argument("--status", default=None, help="Filter by status (queued|running|done|failed)")
+    p.add_argument(
+        "--status", default=None, help="Filter by status (queued|running|done|failed)"
+    )
     p.add_argument("--workspace", default=None, help="Filter by workspace_id")
     ns = p.parse_args(argv)
 
     data_root = Path(ns.data_root)
     jobs_root = data_root / "jobs"
     if not jobs_root.exists():
-        print(json.dumps({"data_root": str(data_root), "jobs": []}, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {"data_root": str(data_root), "jobs": []}, ensure_ascii=False, indent=2
+            )
+        )
         return 0
 
     rows: list[JobRow] = []
@@ -75,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
                 st = {}
 
         job_id = str((job.get("job_id") or st.get("job_id") or d.name))
-        workspace_id = (st.get("workspace_id") or job.get("workspace_id"))
+        workspace_id = st.get("workspace_id") or job.get("workspace_id")
         status = st.get("status")
         step = st.get("step")
         updated_at = st.get("updated_at")
@@ -104,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     # Sort by updated_at desc (string ISO sorts lexicographically)
-    rows.sort(key=lambda r: (r.updated_at or ""), reverse=True)
+    rows.sort(key=lambda r: r.updated_at or "", reverse=True)
     rows = rows[: int(ns.limit)]
 
     out = {

@@ -121,20 +121,22 @@ def test_build_bundle_cli(tmp_path: Path):
     _write_membership(tmp_path, "ws_test", [])
 
     assert (
-        main([
-            "--db",
-            str(db),
-            "--data-root",
-            str(tmp_path),
-            "--workspace",
-            "ws_test",
-            "--query",
-            "x",
-            "--days",
-            "1",
-            "--out",
-            str(outp),
-        ])
+        main(
+            [
+                "--db",
+                str(db),
+                "--data-root",
+                str(tmp_path),
+                "--workspace",
+                "ws_test",
+                "--query",
+                "x",
+                "--days",
+                "1",
+                "--out",
+                str(outp),
+            ]
+        )
         == 0
     )
     assert json.loads(outp.read_text(encoding="utf-8"))["bundle_id"].startswith("bndl_")
