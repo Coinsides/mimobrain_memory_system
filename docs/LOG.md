@@ -49,6 +49,10 @@
 - P1 config (v0.1): add shared ms_config.json loader (`tools/ms_config.py`) + schema; wire build_bundle, run_bundle_repair_pipeline, and golden_run to accept --config.
 - P1 golden policy (v0.1): simplest gate — if bundle diagnostics indicates evidence_degraded=true, Golden marks the question FAIL; raw_quotes requires snippet presence.
 
+## 2026-02-24
+- CI: fix GitHub Actions workflow YAML parsing (quote step names containing colons; workflow now actually runs instead of failing instantly).
+- CI: ruff lint/format hygiene pass + auto-format; tests remain green.
+
 ## 2026-02-25
 - Config: remove hardcoded local data root paths from sync/repair runners; prefer ms_config.json (runs_root_* + vault_roots) or explicit --runs-root.
 - Docs: remove legacy example path (C:/Mimo/...) from tools/ms_config.py.
@@ -57,6 +61,11 @@
 - Spec: bump pinned ref to include packaging fix (contracts/*.json included in mimo-spec wheel).
 - Fix: spec_lock pinned ref corrected to full commit sha (required for CI pip install via git).
 
-## 2026-02-25
-- CI: fix GitHub Actions workflow YAML parsing (quote step names containing colons; workflow now actually runs instead of failing instantly).
-- CI: ruff lint/format hygiene pass + auto-format; tests remain green.
+## 2026-02-26
+- Patch A: membership-fenced search/build_bundle; MU remains pure (no workspace_id/ws:*); workspace scope is expressed via membership.jsonl.
+- Phase 2 Jobs: import_job + jobs_worker (file queue) with auditable status.json metrics/logs.
+- Jobs: jobs_list (no UI), jobs_retry (append-only retry), inbox hygiene (_queue→_done/_failed) + inbox_gc (dry-run).
+- Canonicalization v0.1: extend canonicalize() to fold corrects/supersedes/duplicate_of + tombstone exclusion; diagnostics include folded counts.
+- Jobs provenance: record raw_inputs_provenance (hardlink/copy) + raw_ingest outputs in status.json.
+- Library: add library_list CLI (membership fence + canonical).
+- Distiller v0: add distill_srb (bundle→srb.md/srb.json) for manual session resume injection.
